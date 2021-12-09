@@ -5,10 +5,18 @@
   >
     <div
       class="vue-string__cell"
-      v-for="(fret, index) in frets"
-      :key="fret"
+      v-for="(note, index) in notes"
+      :key="index"
     >
-      <div class="vue-string__note">{{ getNoteByOffset(root, index)['note'] }}</div>
+      <div
+        class="vue-string__note"
+        :class="{
+          'vue-string__note--highlight': !!note.highlight,
+          'vue-string__note--root': !!note.root
+        }"
+      >
+        {{ showInterval && note.interval ? note.interval : note.name }}
+      </div>
     </div>
   </div>
 </template>
@@ -18,18 +26,41 @@ import { getNoteByOffset } from '../utils/notes';
 
 export default {
   props: {
-    root: {
+    start: {
       type: String,
       required: true,
     },
     frets: {
       type: Number,
       default: 19,
-    }
+    },
+    highlight: {
+      type: Array,
+      default: () => []
+    },
+    showInterval: {
+      type: Boolean,
+      default: false,
+    },
   },
-  methods: {
-    getNoteByOffset(root, offset) {
-      return getNoteByOffset(root, offset);
+  computed: {
+    highlightNotes() {
+      return this.highlight.flatMap((i) => i.note);
+    },
+    notes() {
+      const notes = [];
+      for(let i = 0; i < this.frets; i++) {
+        const note = getNoteByOffset(this.start, i);
+        const highlightNoteIndex = this.highlightNotes.indexOf(note);
+        const obj = {
+          name: note,
+          highlight: !!this.highlightNotes.includes(note),
+          root: (highlightNoteIndex === 0),
+          interval: highlightNoteIndex >= 0 ? this.highlight[highlightNoteIndex].interval : false,
+        };
+        notes.push(obj);
+      }
+      return notes;
     }
   }
 };
@@ -84,6 +115,30 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: 100%;
+    &--highlight {
+      background: #095df8;
+      color: #fff;
+    }
+    &--root {
+      background: #0e0b72;
+      color: #fff;
+    }
+  }
+
+  &__interval {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background-color: #fff;
+    color: #494949;
+    width: 15px;
+    height: 15px;
+    display: flex;
+    border-radius: 100%;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    text-align: center;
   }
 }
 </style>

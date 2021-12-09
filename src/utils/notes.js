@@ -19,34 +19,24 @@ const notes = [
 const notesFlatMap = notes.flatMap((i) => i.name);
 
 /* Helper function to get the note by offset */
-function getNoteByOffset(start = 'C1', offset = 0) {
+function getNoteByOffset(start = 'C', offset = 0) {
   // Check Start exists of 1 number, and one letter
-  const input = start.split('');
-  const inputNote = input[0];
-  const inputOctave = parseInt(input[1], 10);
-  const inputIndex = notesFlatMap.indexOf(inputNote);
+  const inputIndex = notesFlatMap.indexOf(start);
 
   if(
-    input.length === 2 // Check if input exists of 2 characters
-    && typeof inputNote === 'string' // First is a string
-    && notesFlatMap.includes(inputNote) // And the string is allowed
-    && typeof inputOctave === 'number' // Second is a number
+    typeof start === 'string' // First is a string
+    && notesFlatMap.includes(start) // And the string is allowed
   ) {
     // Iterate the amount the offset requires
     let outputIndex = inputIndex;
-    let outputOctave = inputOctave;
     for(let i = 0; i < offset; i++) {
       if(outputIndex + 1 < notes.length) {
         outputIndex += 1;
       } else {
         outputIndex = 0;
-        outputOctave += 1;
       }
     }
-    return {
-      note: notesFlatMap[outputIndex],
-      octave: outputOctave,
-    }
+    return notesFlatMap[outputIndex];
   } else {
     console.log('Something went wrong');
   }

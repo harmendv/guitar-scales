@@ -1,10 +1,12 @@
 <template>
   <div class="vue-fretboard">
     <vue-string
-      v-for="(rootNote, index) in reversedStrings"
+      v-for="(start, index) in reversedStrings"
       :frets="frets"
-      :root="rootNote"
+      :start="start"
       :key="index"
+      :highlight="highlight"
+      :show-interval="showInterval"
     />
   </div>
 </template>
@@ -19,11 +21,19 @@ export default {
   props: {
     strings: {
       type: Array,
-      default: () => ['E2', 'A2', 'D3', 'G3', 'B3', 'E4']
+      default: () => ['E', 'A', 'D', 'G', 'B', 'E']
     },
     frets: {
       type: Number,
       default: 19,
+    },
+    highlight: {
+      type: Array,
+      default: () => []
+    },
+    showInterval: {
+      type: Boolean,
+      default: false,
     },
   },
   computed: {
