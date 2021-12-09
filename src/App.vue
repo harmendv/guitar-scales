@@ -4,10 +4,11 @@
       :strings="strings"
       :highlight="highlight"
       :frets="frets"
-      :show-interval="showInterval"
+      :show-interval="(showInterval === 'true')"
     />
     <vue-select :options="notes" v-model="note" />
     <vue-select :options="scales" v-model="scale" />
+    <vue-select :options="showIntervalOptions" v-model="showInterval" />
   </div>
 </template>
 
@@ -26,9 +27,13 @@ export default {
     return {
       strings: ['E', 'A', 'D', 'G', 'B', 'E'],
       frets: 19,
-      note: 'A',
-      scale: 'natural-minor',
-      showInterval: true,
+      note: 'C',
+      scale: 'major',
+      showInterval: 'false',
+      showIntervalOptions: [
+        { title: 'Show Intervals', value: 'true' },
+        { title: 'Show Notes', value: 'false' }
+      ]
     }
   },
   computed: {
