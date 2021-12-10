@@ -4,11 +4,13 @@
       :strings="strings"
       :highlight="highlight"
       :frets="frets"
-      :show-interval="(showInterval === 'true')"
+      :show-interval="showInterval"
+      :show-rest="showRest"
     />
     <vue-select :options="notes" v-model="note" />
     <vue-select :options="scales" v-model="scale" />
     <vue-select :options="showIntervalOptions" v-model="showInterval" />
+    <vue-select :options="showRestOptions" v-model="showRest" />
   </div>
 </template>
 
@@ -30,9 +32,14 @@ export default {
       note: 'C',
       scale: 'major',
       showInterval: 'false',
+      showRest: 'true',
       showIntervalOptions: [
         { title: 'Show Intervals', value: 'true' },
         { title: 'Show Notes', value: 'false' }
+      ],
+      showRestOptions: [
+        { title: 'Show All Notes', value: 'true' },
+        { title: 'Show Scale Notes', value: 'false' }
       ]
     }
   },
@@ -76,7 +83,7 @@ html {
 body {
   margin: 0;
   padding: 50px;
-  background: #cdd6e7;
+  background: linear-gradient(45deg, #cdd6e7, #9ab0da);
   display: flex;
   align-items: center;
   justify-content: center;

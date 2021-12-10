@@ -7,16 +7,27 @@
       :key="index"
       :highlight="highlight"
       :show-interval="showInterval"
+      :show-rest="showRest"
     />
+    <div class="vue-fretboard__fret-numbers">
+      <vue-fret-number
+          v-for="(fret, index) in frets"
+          :key="`fret${index}`"
+      >
+        {{ index }}
+      </vue-fret-number>
+    </div>
   </div>
 </template>
 
 <script>
 import VueString from "./VueString";
+import VueFretNumber from "./VueFretNumber";
 
 export default {
   components: {
     VueString,
+    VueFretNumber,
   },
   props: {
     strings: {
@@ -32,7 +43,11 @@ export default {
       default: () => []
     },
     showInterval: {
-      type: Boolean,
+      type: [Boolean, String],
+      default: false,
+    },
+    showRest: {
+      type: [Boolean, String],
       default: false,
     },
   },
@@ -49,11 +64,19 @@ export default {
 .vue-fretboard {
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 16px;
   overflow-x: auto;
   width: 100%;
-  box-shadow: 0 5px 16px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+  margin-bottom: 50px;
+  background: #fff;
+  background-size: 100%;
+  border-radius: 16px;
+  box-shadow: 0 5px 16px rgba(0,0,0,0.2);
+
+  &__fret-numbers {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
 }
 </style>

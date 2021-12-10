@@ -12,10 +12,11 @@
         class="vue-string__note"
         :class="{
           'vue-string__note--highlight': !!note.highlight,
-          'vue-string__note--root': !!note.root
+          'vue-string__note--root': !!note.root,
+          'vue-string__note--hidden': (!note.highlight && showRest !== 'true'),
         }"
       >
-        {{ showInterval && note.interval ? note.interval : note.name }}
+        {{ showInterval === 'true' && note.interval ? note.interval : note.name }}
       </div>
     </div>
   </div>
@@ -39,7 +40,11 @@ export default {
       default: () => []
     },
     showInterval: {
-      type: Boolean,
+      type: [Boolean, String],
+      default: false,
+    },
+    showRest: {
+      type: [Boolean, String],
       default: false,
     },
   },
@@ -116,12 +121,15 @@ export default {
     justify-content: center;
     border-radius: 100%;
     &--highlight {
-      background: #095df8;
+      background: #011028;
       color: #fff;
     }
     &--root {
-      background: #0e0b72;
+      background: #dc3704;
       color: #fff;
+    }
+    &--hidden {
+      opacity: 0;
     }
   }
 
