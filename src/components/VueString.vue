@@ -11,7 +11,7 @@
       <div
         class="vue-string__note"
         :class="{
-          'vue-string__note--highlight': !!note.highlight,
+          'vue-string__note--highlight': !!note.highlight && degrees[note.degree],
           'vue-string__note--root': !!note.root,
           'vue-string__note--hidden': (!note.highlight && showRest !== 'true'),
         }"
@@ -42,6 +42,10 @@ export default {
     highlight: {
       type: Array,
       default: () => []
+    },
+    degrees: {
+      type: Object,
+      default: () => ({})
     },
     showDegrees: {
       type: [Boolean, String],

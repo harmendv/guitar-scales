@@ -44,11 +44,11 @@ const scales = [
     slug: 'minor-blues',
     formula: [
       { chromatic: 1, degree: 1 },
-      { chromatic: 4, degree: 2 },
-      { chromatic: 6, degree: 3 },
+      { chromatic: 4, degree: 3 },
+      { chromatic: 6, degree: 4 },
       { chromatic: 7, degree: 'b' },
       { chromatic: 8, degree: 5 },
-      { chromatic: 11, degree: 6 },
+      { chromatic: 11, degree: 7 },
     ]
   },
   {
@@ -76,7 +76,7 @@ const scales = [
       { chromatic: 6, degree: 4 },
       { chromatic: 8, degree: 5 },
       { chromatic: 9, degree: 6 },
-      { chromatic: 11, degree: 'b7' },
+      { chromatic: 11, degree: 7 },
     ]
   },
   {
