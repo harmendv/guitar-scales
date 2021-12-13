@@ -1,5 +1,9 @@
 <template>
-  <div class="vue-fret-number" :style="`--divider: ${frets};`">
+  <div
+    class="vue-fret-number"
+    :class="{'vue-fret-number--highlight': !!highlight}"
+    :style="`--divider: ${frets};`"
+  >
     <div class="vue-fret-number__content">
       <slot />
     </div>
@@ -13,12 +17,17 @@ export default {
       type: Number,
       default: 19,
     },
+    highlight: {
+      type: Boolean,
+      default: false,
+    }
   },
 };
 </script>
 
 <style lang="scss">
 .vue-fret-number {
+  $self: &;
   position: relative;
   width: calc(100% / var(--divider));
   text-align: center;
@@ -28,7 +37,12 @@ export default {
   border-right: 2px solid transparent;
   background: #6b7a93;
   color: #fff;
+  &--highlight {
+    #{$self}__content {
+      background: #020b1a;
+    }
 
+  }
   &:first-of-type {
     border-right: 4px solid transparent;
   }
@@ -37,17 +51,17 @@ export default {
   }
   &__content {
     position: relative;
-    background: #3d4960;
+    background: #58657e;
     z-index: 1;
     padding: 3px;
-    width: 20px;
-    height: 20px;
+    width: 23px;
+    height: 23px;
     display: flex;
     font-family: monospace;
     font-size: 13px;
     align-items: center;
     justify-content: center;
-    border-radius: 100%;
+    border-radius: 6px;
   }
 }
 </style>

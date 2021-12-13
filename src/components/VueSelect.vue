@@ -39,10 +39,13 @@ export default {
   overflow: hidden;
   box-shadow: 0 5px 14px rgba(0,0,0,0.2);
   margin-right: 20px;
+  font-family: monospace;
+  margin-bottom: 10px;
 
   &__select {
-    border: 0;
-    padding: 20px 40px 20px 20px;
+    font-family: monospace;
+    font-weight: bold;
+    padding: 10px 30px 10px 10px;
     display: inline-block;
     font-size: 16px;
     outline: 0;
@@ -52,6 +55,12 @@ export default {
     background: transparent url(http://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/16x16/br_down.png) no-repeat 100% center;
     background-size: 8px;
     background-position-x: calc(100% - 15px);
+    border: 3px solid transparent;
+    transition: .2s all;
+
+    &:focus {
+      border: 3px solid #0773ff;
+    }
   }
 }
 </style>

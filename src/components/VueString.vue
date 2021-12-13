@@ -16,7 +16,11 @@
           'vue-string__note--hidden': (!note.highlight && showRest !== 'true'),
         }"
       >
-        {{ showInterval === 'true' && note.interval ? note.interval : note.name }}
+        {{ note.name }}
+        <span
+            class="vue-string__degree"
+            v-if="showDegrees === 'true' && note.degree"
+        >{{ note.degree }}</span>
       </div>
     </div>
   </div>
@@ -39,7 +43,7 @@ export default {
       type: Array,
       default: () => []
     },
-    showInterval: {
+    showDegrees: {
       type: [Boolean, String],
       default: false,
     },
@@ -61,7 +65,7 @@ export default {
           name: note,
           highlight: !!this.highlightNotes.includes(note),
           root: (highlightNoteIndex === 0),
-          interval: highlightNoteIndex >= 0 ? this.highlight[highlightNoteIndex].interval : false,
+          degree: highlightNoteIndex >= 0 ? this.highlight[highlightNoteIndex].degree : false,
         };
         notes.push(obj);
       }
@@ -109,17 +113,17 @@ export default {
 
   &__note {
     position: relative;
-    background: #cdd6e7;
+    background: #fff;
     z-index: 1;
     padding: 3px;
-    width: 20px;
-    height: 20px;
+    width: 23px;
+    height: 23px;
     display: flex;
     font-family: monospace;
     font-size: 13px;
     align-items: center;
     justify-content: center;
-    border-radius: 100%;
+    border-radius: 6px;
     &--highlight {
       background: #011028;
       color: #fff;
@@ -133,14 +137,11 @@ export default {
     }
   }
 
-  &__interval {
+  &__degree {
     position: absolute;
-    bottom: -5px;
-    right: -5px;
-    background-color: #fff;
-    color: #494949;
-    width: 15px;
-    height: 15px;
+    top: 2px;
+    left: 3px;
+    color: #fff;
     display: flex;
     border-radius: 100%;
     align-items: center;

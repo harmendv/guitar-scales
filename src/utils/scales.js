@@ -6,11 +6,11 @@ const scales = [
     name: 'Major Pentatonic',
     slug: 'major-pentatonic',
     formula: [
-      { chromatic: 1, interval: 1 },
-      { chromatic: 3, interval: 2 },
-      { chromatic: 5, interval: 3 },
-      { chromatic: 8, interval: 5 },
-      { chromatic: 10, interval: 6 },
+      { chromatic: 1, degree: 1 },
+      { chromatic: 3, degree: 2 },
+      { chromatic: 5, degree: 3 },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 10, degree: 6 },
     ]
   },
   {
@@ -18,11 +18,11 @@ const scales = [
     name: 'Minor Pentatonic',
     slug: 'minor-pentatonic',
     formula: [
-      { chromatic: 1, interval: 1 },
-      { chromatic: 4, interval: 2 },
-      { chromatic: 6, interval: 3 },
-      { chromatic: 8, interval: 5 },
-      { chromatic: 11, interval: 6 },
+      { chromatic: 1, degree: 1 },
+      { chromatic: 4, degree: 2 },
+      { chromatic: 6, degree: 3 },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 11, degree: 6 },
     ]
   },
   {
@@ -30,12 +30,12 @@ const scales = [
     name: 'Major Blues',
     slug: 'major-blues',
     formula: [
-      { chromatic: 1, interval: 1 },
-      { chromatic: 3, interval: 2 },
-      { chromatic: 4, interval: 'b' },
-      { chromatic: 5, interval: 3 },
-      { chromatic: 8, interval: 5 },
-      { chromatic: 10, interval: 6 },
+      { chromatic: 1, degree: 1 },
+      { chromatic: 3, degree: 2 },
+      { chromatic: 4, degree: 'b' },
+      { chromatic: 5, degree: 3 },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 10, degree: 6 },
     ]
   },
   {
@@ -43,12 +43,12 @@ const scales = [
     name: 'Minor Blues',
     slug: 'minor-blues',
     formula: [
-      { chromatic: 1, interval: 1 },
-      { chromatic: 4, interval: 2 },
-      { chromatic: 6, interval: 3 },
-      { chromatic: 7, interval: 'b' },
-      { chromatic: 8, interval: 5 },
-      { chromatic: 11, interval: 6 },
+      { chromatic: 1, degree: 1 },
+      { chromatic: 4, degree: 2 },
+      { chromatic: 6, degree: 3 },
+      { chromatic: 7, degree: 'b' },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 11, degree: 6 },
     ]
   },
   {
@@ -56,13 +56,13 @@ const scales = [
     name: 'Major',
     slug: 'major',
     formula: [
-      { chromatic: 1, interval: 1 },
-      { chromatic: 3, interval: 2 },
-      { chromatic: 5, interval: 3 },
-      { chromatic: 6, interval: 4 },
-      { chromatic: 8, interval: 5 },
-      { chromatic: 10, interval: 6 },
-      { chromatic: 12, interval: 7 },
+      { chromatic: 1, degree: 1 },
+      { chromatic: 3, degree: 2 },
+      { chromatic: 5, degree: 3 },
+      { chromatic: 6, degree: 4 },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 10, degree: 6 },
+      { chromatic: 12, degree: 7 },
     ]
   },
   {
@@ -70,13 +70,13 @@ const scales = [
     name: 'Natural Minor',
     slug: 'natural-minor',
     formula: [
-      { chromatic: 1, interval: 1 },
-      { chromatic: 3, interval: 2 },
-      { chromatic: 4, interval: 3 },
-      { chromatic: 6, interval: 4 },
-      { chromatic: 8, interval: 5 },
-      { chromatic: 9, interval: 6 },
-      { chromatic: 11, interval: 7 },
+      { chromatic: 1, degree: 1 },
+      { chromatic: 3, degree: 2 },
+      { chromatic: 4, degree: 3 },
+      { chromatic: 6, degree: 4 },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 9, degree: 6 },
+      { chromatic: 11, degree: 'b7' },
     ]
   },
   {
@@ -84,13 +84,13 @@ const scales = [
     name: 'Harmonic Minor',
     slug: 'harmonic-minor',
     formula: [
-      { chromatic: 1, interval: 1 },
-      { chromatic: 3, interval: 2 },
-      { chromatic: 4, interval: 3 },
-      { chromatic: 6, interval: 4 },
-      { chromatic: 8, interval: 5 },
-      { chromatic: 9, interval: 6 },
-      { chromatic: 12, interval: 7 },
+      { chromatic: 1, degree: 1 },
+      { chromatic: 3, degree: 2 },
+      { chromatic: 4, degree: 3 },
+      { chromatic: 6, degree: 4 },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 9, degree: 6 },
+      { chromatic: 12, degree: 7 },
     ]
   },
 ];

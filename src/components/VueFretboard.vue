@@ -6,13 +6,14 @@
       :start="start"
       :key="index"
       :highlight="highlight"
-      :show-interval="showInterval"
+      :show-degrees="showDegrees"
       :show-rest="showRest"
     />
     <div class="vue-fretboard__fret-numbers">
       <vue-fret-number
-          v-for="(fret, index) in frets"
-          :key="`fret${index}`"
+        v-for="(fret, index) in frets"
+        :key="`fret${index}`"
+        :highlight="[3, 5, 7, 9 , 12].includes(index)"
       >
         {{ index }}
       </vue-fret-number>
@@ -42,7 +43,7 @@ export default {
       type: Array,
       default: () => []
     },
-    showInterval: {
+    showDegrees: {
       type: [Boolean, String],
       default: false,
     },
@@ -66,7 +67,7 @@ export default {
   flex-direction: column;
   overflow-x: auto;
   width: 100%;
-  margin-bottom: 50px;
+  margin-bottom: 30px;
   background: #fff;
   background-size: 100%;
   border-radius: 16px;
