@@ -1,6 +1,6 @@
 <template>
-  <div class="vue-select">
-    <select class="vue-select__select" @change="onChange">
+  <div class="vue-select" :class="{ 'vue-select--focused': focused }">
+    <select class="vue-select__select" @change="onChange" @focus="onFocus" @blur="onBlur">
       <option
         :value="option.value"
         :selected="value === option.value"
@@ -23,9 +23,20 @@ export default {
       default: () => [],
     },
   },
+  data() {
+    return {
+      focused: false,
+    };
+  },
   methods: {
     onChange(event) {
       this.$emit('input', event.target.value);
+    },
+    onFocus() {
+      this.focused = true;
+    },
+    onBlur() {
+      this.focused = false;
     }
   }
 };
@@ -41,6 +52,11 @@ export default {
   margin-right: 20px;
   font-family: monospace;
   margin-bottom: 10px;
+  transition: .2s all;
+
+  &--focused {
+    box-shadow: 0 5px 14px rgba(0,0,0,0.2), 0 0 0 3px #0c5ee1;
+  }
 
   &__select {
     font-family: monospace;
@@ -49,18 +65,11 @@ export default {
     display: inline-block;
     font-size: 16px;
     outline: 0;
-    -webkit-appearance: none;
-    -moz-appearance: none;
     appearance: none;
     background: transparent url(http://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/16x16/br_down.png) no-repeat 100% center;
     background-size: 8px;
     background-position-x: calc(100% - 15px);
-    border: 3px solid transparent;
-    transition: .2s all;
-
-    &:focus {
-      border: 3px solid #0773ff;
-    }
+    border: 0;
   }
 }
 </style>

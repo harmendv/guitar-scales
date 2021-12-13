@@ -5,13 +5,16 @@
   >
     <div
       class="vue-string__cell"
+      :class="{
+        'vue-string__cell--first': index === 0,
+      }"
       v-for="(note, index) in notes"
       :key="index"
     >
       <div
         class="vue-string__note"
         :class="{
-          'vue-string__note--highlight': !!note.highlight,
+          'vue-string__note--highlight': !!note.highlight && degrees[note.degree],
           'vue-string__note--root': !!note.root,
           'vue-string__note--hidden': (!note.highlight && showRest !== 'true'),
         }"
@@ -42,6 +45,10 @@ export default {
     highlight: {
       type: Array,
       default: () => []
+    },
+    degrees: {
+      type: Object,
+      default: () => ({})
     },
     showDegrees: {
       type: [Boolean, String],
@@ -77,6 +84,8 @@ export default {
 
 <style lang="scss">
 .vue-string {
+  $self: &;
+
   position: relative;
   width: 100%;
   display: flex;
@@ -109,6 +118,20 @@ export default {
     &:last-of-type {
       border-right: 0;
     }
+
+    &--first {
+      #{$self}__note {
+        background: #a5b2c9;
+        &--highlight {
+          background: #011028;
+          color: #fff;
+        }
+        &--root {
+          background: #dc3704;
+          color: #fff;
+        }
+      }
+    }
   }
 
   &__note {
@@ -124,6 +147,8 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: 6px;
+    transition: .2s all;
+
     &--highlight {
       background: #011028;
       color: #fff;

@@ -6,6 +6,7 @@
       :start="start"
       :key="index"
       :highlight="highlight"
+      :degrees="degrees"
       :show-degrees="showDegrees"
       :show-rest="showRest"
     />
@@ -42,6 +43,10 @@ export default {
     highlight: {
       type: Array,
       default: () => []
+    },
+    degrees: {
+      type: Object,
+      default: () => ({})
     },
     showDegrees: {
       type: [Boolean, String],
