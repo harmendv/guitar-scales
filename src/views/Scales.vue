@@ -21,7 +21,7 @@
         <vue-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)" />
         <vue-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)" />
         <vue-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)" />
-        <vue-checkbox label="Blue Note" v-model="degrees['b']" :disabled="!availableDegrees.includes('b')" />
+        <vue-checkbox label="Blue" v-model="degrees['b']" :disabled="!availableDegrees.includes('b')" />
       </div>
     </div>
   </div>
@@ -172,8 +172,12 @@ export default {
 
 <style lang="scss">
 .degrees {
+  $self: &;
+
   display: flex;
   justify-content: center;
   margin-top: 10px;
+  position: relative;
+
 }
 </style>

@@ -19,10 +19,10 @@ const scales = [
     slug: 'minor-pentatonic',
     formula: [
       { chromatic: 1, degree: 1 },
-      { chromatic: 4, degree: 2 },
-      { chromatic: 6, degree: 3 },
+      { chromatic: 4, degree: 3 },
+      { chromatic: 6, degree: 4 },
       { chromatic: 8, degree: 5 },
-      { chromatic: 11, degree: 6 },
+      { chromatic: 11, degree: 7 },
     ]
   },
   {

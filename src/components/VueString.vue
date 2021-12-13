@@ -5,6 +5,9 @@
   >
     <div
       class="vue-string__cell"
+      :class="{
+        'vue-string__cell--first': index === 0,
+      }"
       v-for="(note, index) in notes"
       :key="index"
     >
@@ -81,6 +84,8 @@ export default {
 
 <style lang="scss">
 .vue-string {
+  $self: &;
+
   position: relative;
   width: 100%;
   display: flex;
@@ -113,6 +118,20 @@ export default {
     &:last-of-type {
       border-right: 0;
     }
+
+    &--first {
+      #{$self}__note {
+        background: #a5b2c9;
+        &--highlight {
+          background: #011028;
+          color: #fff;
+        }
+        &--root {
+          background: #dc3704;
+          color: #fff;
+        }
+      }
+    }
   }
 
   &__note {
@@ -128,6 +147,8 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: 6px;
+    transition: .2s all;
+
     &--highlight {
       background: #011028;
       color: #fff;
