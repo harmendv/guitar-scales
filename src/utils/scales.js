@@ -53,7 +53,7 @@ const scales = [
   },
   {
     id: 5,
-    name: 'Major',
+    name: 'Major (Ionian)',
     slug: 'major',
     formula: [
       { chromatic: 1, degree: 1 },
@@ -91,6 +91,20 @@ const scales = [
       { chromatic: 8, degree: 5 },
       { chromatic: 9, degree: 6 },
       { chromatic: 12, degree: 7 },
+    ]
+  },
+  {
+    id: 5,
+    name: 'Dorian',
+    slug: 'dorian',
+    formula: [
+      { chromatic: 1, degree: 1 },
+      { chromatic: 3, degree: 2 },
+      { chromatic: 4, degree: 3 },
+      { chromatic: 6, degree: 4 },
+      { chromatic: 8, degree: 5 },
+      { chromatic: 10, degree: 6 },
+      { chromatic: 11, degree: 7 },
     ]
   },
 ];
