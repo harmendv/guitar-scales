@@ -57,7 +57,7 @@ export default {
 
   &--focused {
     #{$self}__checkbox {
-      box-shadow: 0 5px 14px rgba(0,0,0,0.2), 0 0 0 3px #0c5ee1;
+      box-shadow: 0 5px 14px rgba(0,0,0,0.2), 0 0 0 3px rgba(12, 94, 225, 0.4);
     }
   }
 
