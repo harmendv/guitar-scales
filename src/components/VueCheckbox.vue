@@ -54,6 +54,7 @@ export default {
   margin: 0 5px;
   flex-direction: row-reverse;
   user-select: none;
+  color: #fff;
 
   &--focused {
     #{$self}__checkbox {
@@ -73,7 +74,7 @@ export default {
     width: 40px;
     height: 20px;
     appearance: none;
-    background-color: #fff;
+    background-color: #000000;
     border-radius: 10px;
     box-shadow: 0 5px 14px rgba(0,0,0,0.2);
     outline: none;
@@ -86,7 +87,7 @@ export default {
       left: 3px;
       width: 14px;
       height: 14px;
-      background-color: #cacaca;
+      background-color: #00102a;
       border-radius: 10px;
       transition: .2s all;
     }
