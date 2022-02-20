@@ -71,12 +71,18 @@ export default {
   display: flex;
   flex-direction: column;
   overflow-x: auto;
-  width: 100%;
+  width: calc(100vw - 40px);
   margin-bottom: 30px;
-  background: #fff;
+  background: #161618;
   background-size: 100%;
   border-radius: 16px;
   box-shadow: 0 5px 16px rgba(0,0,0,0.2);
+  height: 33.5vw;
+  max-height: 339px;
+  max-width: 950px;
+  overflow-y: hidden;
+  min-width: 700px;
+  min-height: 245px;
 
   &__fret-numbers {
     position: relative;

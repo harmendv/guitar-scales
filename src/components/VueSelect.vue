@@ -45,7 +45,7 @@ export default {
 <style lang="scss">
 .vue-select {
   display: inline-block;
-  background: #fff;
+  background: #000000;
   border-radius: 5px;
   overflow: hidden;
   box-shadow: 0 5px 14px rgba(0,0,0,0.2);
@@ -53,6 +53,7 @@ export default {
   font-family: monospace;
   margin-bottom: 10px;
   transition: .2s all;
+  color: #fff;
 
   &--focused {
     box-shadow: 0 5px 14px rgba(0,0,0,0.2), 0 0 0 3px rgba(12, 94, 225, 0.4);
@@ -66,10 +67,12 @@ export default {
     font-size: 16px;
     outline: 0;
     appearance: none;
-    background: transparent url(http://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/16x16/br_down.png) no-repeat 100% center;
-    background-size: 8px;
+    background: #000 url(https://upload.wikimedia.org/wikipedia/commons/9/9d/Caret_down_font_awesome_whitevariation.svg) no-repeat 100% center;
+    background-size: 13px;
     background-position-x: calc(100% - 15px);
     border: 0;
+    border-color: black;
+    color: #fff;
   }
 }
 </style>

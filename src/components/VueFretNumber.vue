@@ -5,7 +5,9 @@
     :style="`--divider: ${frets};`"
   >
     <div class="vue-fret-number__content">
-      <slot />
+      <div class="vue-fret-number__number">
+        <slot />
+      </div>
     </div>
   </div>
 </template>
@@ -35,11 +37,11 @@ export default {
   display: flex;
   justify-content: center;
   border-right: 2px solid transparent;
-  background: #6b7a93;
+  background: #000000;
   color: #fff;
   &--highlight {
     #{$self}__content {
-      background: #020b1a;
+      background: #1a1a1a;
     }
 
   }
@@ -51,17 +53,27 @@ export default {
   }
   &__content {
     position: relative;
-    background: #58657e;
+    background: #000000;
     z-index: 1;
     padding: 3px;
-    width: 23px;
-    height: 23px;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
     display: flex;
     font-family: monospace;
-    font-size: 13px;
+    font-size: 1.2vw;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 16px;
+  }
+  &__number {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>

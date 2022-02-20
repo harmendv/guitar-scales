@@ -19,11 +19,13 @@
           'vue-string__note--hidden': (!note.highlight && showRest !== 'true'),
         }"
       >
-        {{ note.name }}
-        <span
-            class="vue-string__degree"
-            v-if="showDegrees === 'true' && note.degree"
-        >{{ note.degree }}</span>
+        <div class="vue-string__note-content">
+          {{ note.name }}
+          <span
+              class="vue-string__degree"
+              v-if="showDegrees === 'true' && note.degree"
+          >{{ note.degree }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -96,7 +98,7 @@ export default {
 
     width: calc(100% / var(--divider));
     text-align: center;
-    padding: 10px;
+    padding: 7px;
     display: flex;
     justify-content: center;
     border-right: 2px solid #000;
@@ -113,7 +115,7 @@ export default {
     }
     &:first-of-type {
       border-right: 4px solid #000;
-      background-color: #a5b2c9;
+      background-color: #09090a;
     }
     &:last-of-type {
       border-right: 0;
@@ -121,13 +123,13 @@ export default {
 
     &--first {
       #{$self}__note {
-        background: #a5b2c9;
+        background: #09090a;
         &--highlight {
-          background: #011028;
+          background: #004397;
           color: #fff;
         }
         &--root {
-          background: #dc3704;
+          background: #dc4a04;
           color: #fff;
         }
       }
@@ -136,25 +138,34 @@ export default {
 
   &__note {
     position: relative;
-    background: #fff;
+    background: #161618;
     z-index: 1;
-    padding: 3px;
-    width: 23px;
-    height: 23px;
+    width: 100%;
+    height: 0;
+    padding-bottom: 100%;
     display: flex;
     font-family: monospace;
-    font-size: 13px;
+    font-size: clamp(7px, 1.2vw, 13px);
     align-items: center;
     justify-content: center;
     border-radius: 6px;
     transition: .2s all;
-
+    color: #fff;
+    &-content {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      top: 0;
+    }
     &--highlight {
-      background: #011028;
+      background: #004397;
       color: #fff;
     }
     &--root {
-      background: #dc3704;
+      background: #dc4a04;
       color: #fff;
     }
     &--hidden {
@@ -171,7 +182,7 @@ export default {
     border-radius: 100%;
     align-items: center;
     justify-content: center;
-    font-size: 8px;
+    font-size: clamp(4px, 1vw, 8px);
     text-align: center;
   }
 }
