@@ -2,12 +2,8 @@
 
 Visualize your guitar scales, find voicings and learn the intervals! 
 
-## Getting Started
-### Install dependencies & serve the project
-```bash
-npm ci
-npm run serve
-```
+Check it out here: https://harmendv.github.io/guitar-scales/
+
 ### Example
 ![Example](example.png)
 
