@@ -1,5 +1,10 @@
 import { createApp } from 'vue'
-import './style.css'
+import { spaceAfter } from '@libvue/core';
+import './style.scss'
 import App from './App.vue'
 
-createApp(App).mount('#app')
+const app = createApp(App);
+
+app.directive('space-after', spaceAfter);
+
+app.mount('#app')

@@ -1,7 +1,27 @@
-# Vue 3 + Vite
+# 🎸 guitar-scales
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Visualize your guitar scales, find voicings and learn the intervals!
 
-## Recommended IDE Setup
+Check it out here: https://harmendv.github.io/guitar-scales/
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+### Example
+![Example](example.png)
+
+## Features
+
+### Supported scales
+- Major (Ionian)
+- Major Pentatonic
+- Minor Pentatonic
+- Major Blues
+- Minor Blues
+- Natural Minor (Aeolian)
+- Harmonic Minor
+- Dorian
+
+### Show intervals
+Only highlight certain intervals to easily find new voicings.
+
+## Todo
+- Add all modes
+- Better interval notation

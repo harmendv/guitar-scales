@@ -102,7 +102,7 @@ export default {
     padding: 7px;
     display: flex;
     justify-content: center;
-    border-right: 2px solid #000;
+    border-right: 2px solid var(--border-color);
 
     &:before {
       content: '';
@@ -111,12 +111,12 @@ export default {
       left: 0;
       height: 2px;
       width: 100%;
-      background-color: black;
+      background-color: var(--border-color);
       z-index: 1;
     }
     &:first-of-type {
-      border-right: 4px solid #000;
-      background-color: #09090a;
+      border-right: 4px solid var(--border-color);
+      background-color: var(--background-color);
     }
     &:last-of-type {
       border-right: 0;
@@ -124,13 +124,13 @@ export default {
 
     &--first {
       #{$self}__note {
-        background: #09090a;
+        background: var(--border-color-light);
         &--highlight {
-          background: #004397;
+          background: var(--color-primary);
           color: #fff;
         }
         &--root {
-          background: #dc4a04;
+          background: var(--color-danger);
           color: #fff;
         }
       }
@@ -139,7 +139,7 @@ export default {
 
   &__note {
     position: relative;
-    background: #161618;
+    background: var(--border-color-light);
     z-index: 1;
     width: 100%;
     height: 0;
@@ -149,9 +149,9 @@ export default {
     font-size: clamp(7px, 1.2vw, 13px);
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
+    border-radius: 100%;
     transition: .2s all;
-    color: #fff;
+    color: var(--text-color);
     &-content {
       position: absolute;
       width: 100%;
@@ -162,11 +162,11 @@ export default {
       top: 0;
     }
     &--highlight {
-      background: #004397;
+      background: var(--color-primary);
       color: #fff;
     }
     &--root {
-      background: #dc4a04;
+      background: var(--color-danger);
       color: #fff;
     }
     &--hidden {

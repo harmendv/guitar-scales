@@ -1,4 +1,5 @@
 <template>
+    <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
     <div class="view">
         <vue-fretboard
             :strings="strings"
@@ -9,28 +10,35 @@
             :show-rest="showRest"
         />
         <div class="options">
-            <vue-select :options="notes" v-model="note"/>
-            <vue-select :options="scales" v-model="scale"/>
-            <vue-select :options="showDegreesOptions" v-model="showDegrees"/>
-            <vue-select :options="showRestOptions" v-model="showRest"/>
-            <div class="degrees">
-                <vue-checkbox label="1st" v-model="degrees['1']" :disabled="!availableDegrees.includes(1)"/>
-                <vue-checkbox label="2nd" v-model="degrees['2']" :disabled="!availableDegrees.includes(2)"/>
-                <vue-checkbox label="3rd" v-model="degrees['3']" :disabled="!availableDegrees.includes(3)"/>
-                <vue-checkbox label="4th" v-model="degrees['4']" :disabled="!availableDegrees.includes(4)"/>
-                <vue-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)"/>
-                <vue-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)"/>
-                <vue-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)"/>
-                <vue-checkbox label="Blue" v-model="degrees['b']" :disabled="!availableDegrees.includes('b')"/>
-            </div>
+            <lv-fieldset label="Options" v-space-after="1">
+                <lv-flex fill>
+                    <lv-select v-model="note" :options="notes" :clearable="false"></lv-select>
+                    <lv-select v-model="scale" :options="scales" :clearable="false"></lv-select>
+                    <lv-select v-model="showDegrees" :options="showDegreesOptions" :clearable="false"></lv-select>
+                    <lv-select v-model="showRest" :options="showRestOptions" :clearable="false"></lv-select>
+                </lv-flex>
+            </lv-fieldset>
+            <lv-fieldset label="Degrees">
+                <lv-flex>
+                    <lv-checkbox label="1st" v-model="degrees['1']" :disabled="!availableDegrees.includes(1)"/>
+                    <lv-checkbox label="2nd" v-model="degrees['2']" :disabled="!availableDegrees.includes(2)"/>
+                    <lv-checkbox label="3rd" v-model="degrees['3']" :disabled="!availableDegrees.includes(3)"/>
+                    <lv-checkbox label="4th" v-model="degrees['4']" :disabled="!availableDegrees.includes(4)"/>
+                    <lv-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)"/>
+                    <lv-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)"/>
+                    <lv-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)"/>
+                    <lv-checkbox label="Blue" v-model="degrees['b']" :disabled="!availableDegrees.includes('b')"/>
+                </lv-flex>
+            </lv-fieldset>
+
         </div>
     </div>
 </template>
 
 <script>
+import { LvSelect, LvFlex, LvCheckbox, LvFieldset, LvThemeToggle } from '@libvue/core';
 import { useUrlSearchParams } from "@vueuse/core";
 import VueFretboard from "./components/VueFretboard.vue";
-import VueSelect from "./components/VueSelect.vue";
 import VueCheckbox from "./components/VueCheckbox.vue";
 import { scales, scalesFlatMap } from "./utils/scales.js";
 import { notes, getNoteByOffset } from "./utils/notes.js";
@@ -40,11 +48,16 @@ const params =  useUrlSearchParams('history');
 export default {
     components: {
         VueFretboard,
-        VueSelect,
-        VueCheckbox
+        VueCheckbox,
+        LvCheckbox,
+        LvSelect,
+        LvFlex,
+        LvFieldset,
+        LvThemeToggle,
     },
     data() {
         return {
+            theme: this.preferredColorScheme(),
             strings: ['E', 'A', 'D', 'G', 'B', 'E'],
             frets: 19,
             note: params.note || 'C',
@@ -60,18 +73,28 @@ export default {
                 '7': true,
                 'b': true,
             }),
-            showRest: params.showRest || 'false',
+            showRest: params.showRest || 'true',
             showDegreesOptions: [
-                {title: 'Show Scale Degrees', value: 'true'},
-                {title: 'Hide Scale Degrees', value: 'false'}
+                {label: 'Show Scale Degrees', value: 'true'},
+                {label: 'Show Scale Notes', value: 'false'}
             ],
             showRestOptions: [
-                {title: 'All Notes', value: 'true'},
-                {title: 'Only Scale Notes', value: 'false'}
+                {label: 'All Notes', value: 'true'},
+                {label: 'Only Scale Notes', value: 'false'}
             ]
         }
     },
+    mounted() {
+        if (localStorage.getItem('theme')) {
+            this.theme = localStorage.getItem('theme');
+            document.body.setAttribute('data-theme', this.theme);
+        }
+    },
     watch: {
+        theme(val) {
+            document.body.setAttribute('data-theme', val);
+            localStorage.setItem('theme', val);
+        },
         note: {
             handler(value) {
                 params.note = value;
@@ -103,7 +126,7 @@ export default {
         scales() {
             const options = [];
             scales.forEach((scale) => {
-                options.push({title: scale.name, value: scale.slug})
+                options.push({label: scale.name, value: scale.slug})
             })
             return options;
         },
@@ -114,7 +137,7 @@ export default {
         notes() {
             const options = [];
             notes.forEach((note) => {
-                options.push({title: note.name, value: note.name})
+                options.push({label: note.name, value: note.name})
             })
             return options;
         },
@@ -134,18 +157,22 @@ export default {
         availableDegrees() {
             return this.highlight.flatMap((i) => i.degree)
         }
+    },
+    methods: {
+        preferredColorScheme() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 'dark';
+            }
+            return 'light';
+        },
     }
 }
 </script>
 
-<style lang="scss">
-.degrees {
-    $self: &;
-
-    display: flex;
-    justify-content: center;
-    margin-top: 10px;
-    position: relative;
-
+<style>
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
 }
 </style>
