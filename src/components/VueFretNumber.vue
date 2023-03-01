@@ -61,7 +61,7 @@ export default {
     padding-bottom: 100%;
     display: flex;
     font-family: monospace;
-    font-size: 1.2vw;
+    font-size: 1rem;
     align-items: center;
     justify-content: center;
     border-radius: 16px;

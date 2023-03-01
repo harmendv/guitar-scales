@@ -15,16 +15,17 @@
         class="vue-string__note"
         :class="{
           'vue-string__note--highlight': !!note.highlight && degrees[note.degree],
-          'vue-string__note--root': !!note.root,
+          'vue-string__note--root': !!note.root && degrees[note.degree],
           'vue-string__note--hidden': (!note.highlight && showRest !== 'true'),
         }"
       >
         <div class="vue-string__note-content">
-          {{ note.name }}
-          <span
-              class="vue-string__degree"
-              v-if="showDegrees === 'true' && note.degree"
-          >{{ note.degree }}</span>
+            <template v-if="showDegrees === 'true' && note.degree">
+                {{ note.degree }}
+            </template>
+            <template v-else>
+                {{ note.name }}
+            </template>
         </div>
       </div>
     </div>

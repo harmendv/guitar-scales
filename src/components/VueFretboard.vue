@@ -23,8 +23,8 @@
 </template>
 
 <script>
-import VueString from "./VueString";
-import VueFretNumber from "./VueFretNumber";
+import VueString from "./VueString.vue";
+import VueFretNumber from "./VueFretNumber.vue";
 
 export default {
   components: {
