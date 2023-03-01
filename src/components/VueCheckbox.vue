@@ -1,18 +1,14 @@
 <template>
   <div class="vue-checkbox" :class="{ 'vue-checkbox--focused': focused }">
     <label class="vue-checkbox__label" v-if="label" :for="label">{{ label }}</label>
-    <input @focus="onFocus" @blur="onBlur" :disabled="disabled" class="vue-checkbox__checkbox" :id="label" type="checkbox" :checked="value" @change="onChange">
+    <input @focus="onFocus" @blur="onBlur" :disabled="disabled" class="vue-checkbox__checkbox" :id="label" type="checkbox" :checked="modelValue" @change="onChange">
   </div>
 </template>
 
 <script>
 export default {
-  model: {
-    prop: 'value',
-    event: 'change'
-  },
   props: {
-    value: {
+    modelValue: {
       type: [String, Boolean],
       default: null,
     },
@@ -30,9 +26,10 @@ export default {
       focused: false,
     };
   },
+  emits: ['update:modelValue'],
   methods: {
     onChange(e) {
-      this.$emit('change', e.target.checked || false);
+      this.$emit('update:modelValue', e.target.checked || false);
     },
     onFocus() {
       this.focused = true;

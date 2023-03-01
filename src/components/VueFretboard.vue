@@ -23,8 +23,8 @@
 </template>
 
 <script>
-import VueString from "./VueString";
-import VueFretNumber from "./VueFretNumber";
+import VueString from "./VueString.vue";
+import VueFretNumber from "./VueFretNumber.vue";
 
 export default {
   components: {
@@ -73,16 +73,17 @@ export default {
   overflow-x: auto;
   width: calc(100vw - 40px);
   margin-bottom: 30px;
-  background: #161618;
+  background: var(--background-color);
   background-size: 100%;
   border-radius: 16px;
-  box-shadow: 0 5px 16px rgba(0,0,0,0.2);
+  border: 1px solid var(--border-color);
   height: 33.5vw;
   max-height: 339px;
   max-width: 950px;
   overflow-y: hidden;
   min-width: 700px;
   min-height: 245px;
+    box-shadow: var(--shadow);
 
   &__fret-numbers {
     position: relative;

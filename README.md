@@ -1,6 +1,6 @@
 # 🎸 guitar-scales
 
-Visualize your guitar scales, find voicings and learn the intervals! 
+Visualize your guitar scales, find voicings and learn the intervals!
 
 Check it out here: https://harmendv.github.io/guitar-scales/
 
@@ -20,7 +20,7 @@ Check it out here: https://harmendv.github.io/guitar-scales/
 - Dorian
 
 ### Show intervals
-Only highlight certain intervals to easily find new voicings. 
+Only highlight certain intervals to easily find new voicings.
 
 ## Todo
 - Add all modes
