@@ -1,6 +1,53 @@
 <template>
-    <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
     <div class="view">
+        <div class="fixed">
+            <lv-flex>
+                <lv-button
+                    class="mobile-button"
+                    v-if="!breakpoints.greaterOrEqual.md"
+                    @click="showFilters = !showFilters"
+                    size="small"
+                    color="solid-dimmed-primary"
+                    icon="cog"
+                >
+                    Settings
+                </lv-button>
+                <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
+            </lv-flex>
+        </div>
+
+        <lv-drawer :show="showFilters" placement="right" @click-backdrop="showFilters = false">
+            <lv-fieldset label="Options" v-space-after="1">
+                <lv-flex fill direction="column">
+                    <lv-select v-model="note" :options="notes" :clearable="false"></lv-select>
+                    <lv-select v-model="scale" :options="scales" :clearable="false"></lv-select>
+                    <lv-select v-model="showDegrees" :options="showDegreesOptions" :clearable="false"></lv-select>
+                    <lv-select v-model="showRest" :options="showRestOptions" :clearable="false"></lv-select>
+                </lv-flex>
+            </lv-fieldset>
+            <lv-fieldset label="Degrees">
+                <lv-card>
+                    <lv-flex direction="column">
+                        <lv-checkbox label="1st degree" v-model="degrees['1']"
+                                     :disabled="!availableDegrees.includes(1)"/>
+                        <lv-checkbox label="2nd degree" v-model="degrees['2']"
+                                     :disabled="!availableDegrees.includes(2)"/>
+                        <lv-checkbox label="3rd degree" v-model="degrees['3']"
+                                     :disabled="!availableDegrees.includes(3)"/>
+                        <lv-checkbox label="4th degree" v-model="degrees['4']"
+                                     :disabled="!availableDegrees.includes(4)"/>
+                        <lv-checkbox label="5th degree" v-model="degrees['5']"
+                                     :disabled="!availableDegrees.includes(5)"/>
+                        <lv-checkbox label="6th degree" v-model="degrees['6']"
+                                     :disabled="!availableDegrees.includes(6)"/>
+                        <lv-checkbox label="7th degree" v-model="degrees['7']"
+                                     :disabled="!availableDegrees.includes(7)"/>
+                        <lv-checkbox label="Blue note" v-model="degrees['b']"
+                                     :disabled="!availableDegrees.includes('b')"/>
+                    </lv-flex>
+                </lv-card>
+            </lv-fieldset>
+        </lv-drawer>
         <vue-fretboard
             :strings="strings"
             :highlight="highlight"
@@ -8,8 +55,9 @@
             :show-degrees="showDegrees"
             :degrees="degrees"
             :show-rest="showRest"
+            v-space-after="breakpoints.greaterOrEqual.md ? 1 : 0"
         />
-        <div class="options">
+        <div class="options" v-if="breakpoints.greaterOrEqual.md">
             <lv-fieldset label="Options" v-space-after="1">
                 <lv-flex fill>
                     <lv-select v-model="note" :options="notes" :clearable="false"></lv-select>
@@ -19,44 +67,60 @@
                 </lv-flex>
             </lv-fieldset>
             <lv-fieldset label="Degrees">
-                <lv-flex>
-                    <lv-checkbox label="1st" v-model="degrees['1']" :disabled="!availableDegrees.includes(1)"/>
-                    <lv-checkbox label="2nd" v-model="degrees['2']" :disabled="!availableDegrees.includes(2)"/>
-                    <lv-checkbox label="3rd" v-model="degrees['3']" :disabled="!availableDegrees.includes(3)"/>
-                    <lv-checkbox label="4th" v-model="degrees['4']" :disabled="!availableDegrees.includes(4)"/>
-                    <lv-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)"/>
-                    <lv-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)"/>
-                    <lv-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)"/>
-                    <lv-checkbox label="Blue" v-model="degrees['b']" :disabled="!availableDegrees.includes('b')"/>
-                </lv-flex>
+                <lv-card>
+                    <lv-flex>
+                        <lv-checkbox label="1st" v-model="degrees['1']" :disabled="!availableDegrees.includes(1)"/>
+                        <lv-checkbox label="2nd" v-model="degrees['2']" :disabled="!availableDegrees.includes(2)"/>
+                        <lv-checkbox label="3rd" v-model="degrees['3']" :disabled="!availableDegrees.includes(3)"/>
+                        <lv-checkbox label="4th" v-model="degrees['4']" :disabled="!availableDegrees.includes(4)"/>
+                        <lv-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)"/>
+                        <lv-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)"/>
+                        <lv-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)"/>
+                        <lv-checkbox label="Blue" v-model="degrees['b']" :disabled="!availableDegrees.includes('b')"/>
+                    </lv-flex>
+                </lv-card>
             </lv-fieldset>
-
         </div>
     </div>
 </template>
 
 <script>
-import { LvSelect, LvFlex, LvCheckbox, LvFieldset, LvThemeToggle } from '@libvue/core';
+import {
+    LvSelect,
+    LvFlex,
+    LvCheckbox,
+    LvFieldset,
+    LvThemeToggle,
+    LvCard,
+    breakpointMixin,
+    LvDrawer,
+    LvButton,
+    LvIcon
+} from '@libvue/core';
 import { useUrlSearchParams } from "@vueuse/core";
 import VueFretboard from "./components/VueFretboard.vue";
-import VueCheckbox from "./components/VueCheckbox.vue";
 import { scales, scalesFlatMap } from "./utils/scales.js";
 import { notes, getNoteByOffset } from "./utils/notes.js";
 
-const params =  useUrlSearchParams('history');
+const params = useUrlSearchParams('history');
 
 export default {
+    mixins: [breakpointMixin],
     components: {
+        LvIcon,
         VueFretboard,
-        VueCheckbox,
         LvCheckbox,
         LvSelect,
         LvFlex,
         LvFieldset,
         LvThemeToggle,
+        LvCard,
+        LvDrawer,
+        LvButton,
     },
     data() {
         return {
+            showFilters: false,
             theme: this.preferredColorScheme(),
             strings: ['E', 'A', 'D', 'G', 'B', 'E'],
             frets: 19,
@@ -169,10 +233,18 @@ export default {
 }
 </script>
 
-<style>
-.theme-toggle {
+<style lang="scss">
+.fixed {
     position: fixed;
     top: 1rem;
     right: 1rem;
+    z-index: 10;
+}
+
+.view {
+    width: 100%;
+    max-width: 980px;
+    margin: 0 auto;
+    min-width: 490px;
 }
 </style>

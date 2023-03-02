@@ -8,6 +8,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   color: var(--text-color);
+  height: auto;
 }
 
 
@@ -15,4 +16,6 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   text-align: center;
+  padding: 20px;
+  width: 100%;
 }
