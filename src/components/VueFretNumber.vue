@@ -65,7 +65,7 @@ export default {
         padding-bottom: 100%;
         display: flex;
         font-family: monospace;
-        font-size: 1rem;
+        font-size: clamp(7px, 1.2vw, 13px);
         align-items: center;
         justify-content: center;
         border-radius: 6px;
