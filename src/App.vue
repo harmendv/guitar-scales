@@ -1,19 +1,8 @@
 <template>
-    <div class="view">
-        <div class="fixed">
-            <lv-flex>
-                <lv-button
-                    class="mobile-button"
-                    v-if="!breakpoints.greaterOrEqual.md"
-                    @click="showFilters = !showFilters"
-                    size="small"
-                    color="solid-dimmed-primary"
-                    icon="cog"
-                >
-                    Settings
-                </lv-button>
-                <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
-            </lv-flex>
+    <div class="view" :class="{ 'view--mobile': !breakpoints.greaterOrEqual.lg }">
+
+        <div class="fixed" v-if="breakpoints.greaterOrEqual.lg">
+            <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
         </div>
 
         <lv-drawer :show="showFilters" placement="right" @click-backdrop="showFilters = false">
@@ -25,7 +14,7 @@
                     <lv-select v-model="showRest" :options="showRestOptions" :clearable="false"></lv-select>
                 </lv-flex>
             </lv-fieldset>
-            <lv-fieldset label="Degrees">
+            <lv-fieldset label="Degrees"  v-space-after="1">
                 <lv-card>
                     <lv-flex direction="column">
                         <lv-checkbox label="1st degree" v-model="degrees['1']"
@@ -47,7 +36,18 @@
                     </lv-flex>
                 </lv-card>
             </lv-fieldset>
+            <lv-fieldset label="Theme">
+                <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle> Toggle Light/Dark
+            </lv-fieldset>
         </lv-drawer>
+        <lv-button
+            class="mobile-button"
+            v-if="!breakpoints.greaterOrEqual.lg"
+            @click="showFilters = !showFilters"
+            size="small"
+            color="solid-dimmed-primary"
+            icon="cog"
+        ></lv-button>
         <vue-fretboard
             :strings="strings"
             :highlight="highlight"
@@ -55,9 +55,9 @@
             :show-degrees="showDegrees"
             :degrees="degrees"
             :show-rest="showRest"
-            v-space-after="breakpoints.greaterOrEqual.md ? 1 : 0"
+            v-space-after="breakpoints.greaterOrEqual.lg ? 1 : 0"
         />
-        <div class="options" v-if="breakpoints.greaterOrEqual.md">
+        <div class="options" v-if="breakpoints.greaterOrEqual.lg">
             <lv-fieldset label="Options" v-space-after="1">
                 <lv-flex fill>
                     <lv-select v-model="note" :options="notes" :clearable="false"></lv-select>
@@ -246,5 +246,16 @@ export default {
     max-width: 980px;
     margin: 0 auto;
     min-width: 490px;
+    display: flex;
+    flex-direction: column;
+    &--mobile {
+        flex-direction: row;
+    }
+}
+.mobile-button {
+    position: fixed;
+    left: 0;
+    top: 0;
+    border-radius: 0;
 }
 </style>
