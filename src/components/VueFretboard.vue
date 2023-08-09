@@ -7,6 +7,7 @@
             :key="index"
             :highlight="highlight"
             :degrees="degrees"
+            :root="root"
             :show-degrees="showDegrees"
             :show-rest="showRest"
         />
@@ -56,6 +57,10 @@ export default {
             type: [Boolean, String],
             default: false,
         },
+        root: {
+            type: String,
+            required: true,
+        }
     },
     computed: {
         reversedStrings() {

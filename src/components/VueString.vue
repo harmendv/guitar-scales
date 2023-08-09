@@ -15,7 +15,7 @@
         class="vue-string__note"
         :class="{
           'vue-string__note--highlight': !!note.highlight && degrees[note.degree],
-          'vue-string__note--root': !!note.root && degrees[note.degree],
+          'vue-string__note--root': note.name === root,
           'vue-string__note--hidden': (!note.highlight && showRest !== 'true'),
         }"
       >
@@ -61,6 +61,10 @@ export default {
       type: [Boolean, String],
       default: false,
     },
+    root: {
+      type: String,
+      required: true,
+    }
   },
   computed: {
     highlightNotes() {
