@@ -29,6 +29,7 @@ function getNoteByOffset(start = 'C', offset = 0) {
   ) {
     // Iterate the amount the offset requires
     let outputIndex = inputIndex;
+
     for(let i = 0; i < offset; i++) {
       if(outputIndex + 1 < notes.length) {
         outputIndex += 1;
@@ -36,7 +37,9 @@ function getNoteByOffset(start = 'C', offset = 0) {
         outputIndex = 0;
       }
     }
-    return notesFlatMap[outputIndex];
+
+    const proxy = new Proxy(notesFlatMap, {})
+    return proxy[outputIndex];
   } else {
     console.log('Something went wrong');
   }
