@@ -16,32 +16,62 @@
             v-space-after="2"
         />
         <div class="options">
-            <lv-fieldset label="Scale" v-space-after="1">
-                <lv-flex fill>
-                    <lv-select v-model="note" :options="notes" :clearable="false"></lv-select>
-                    <lv-select v-model="scale" :options="scales" :clearable="false"></lv-select>
-                    <lv-select v-model="mode" :options="modes" :clearable="false"></lv-select>
-                </lv-flex>
-            </lv-fieldset>
-            <lv-fieldset label="Options" v-space-after="1">
-                <lv-flex fill>
-                    <lv-select v-model="showDegrees" :options="showDegreesOptions" :clearable="false"></lv-select>
-                    <lv-select v-model="showRest" :options="showRestOptions" :clearable="false"></lv-select>
-                </lv-flex>
-            </lv-fieldset>
-            <lv-fieldset label="Degrees">
-                <lv-card>
-                    <lv-flex>
-                        <lv-checkbox label="1st" v-model="degrees['1']" :disabled="!availableDegrees.includes(1)"/>
-                        <lv-checkbox label="2nd" v-model="degrees['2']" :disabled="!availableDegrees.includes(2)"/>
-                        <lv-checkbox label="3rd" v-model="degrees['3']" :disabled="!availableDegrees.includes(3)"/>
-                        <lv-checkbox label="4th" v-model="degrees['4']" :disabled="!availableDegrees.includes(4)"/>
-                        <lv-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)"/>
-                        <lv-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)"/>
-                        <lv-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)"/>
-                    </lv-flex>
-                </lv-card>
-            </lv-fieldset>
+
+            <lv-grid v-space-after="1" gap="1.5rem">
+                <lv-grid-row gap="1.5rem">
+                    <lv-grid-column :width="4" :md="12">
+                        <lv-fieldset label="Tonic">
+                            <lv-select v-model="note" :options="notes" :clearable="false"></lv-select>
+                        </lv-fieldset>
+                    </lv-grid-column>
+                    <lv-grid-column :width="4" :md="12">
+                        <lv-fieldset label="Scale">
+                            <lv-select v-model="scale" :options="scales" :clearable="false"></lv-select>
+                        </lv-fieldset>
+                    </lv-grid-column>
+                    <lv-grid-column :width="4" :md="12">
+                        <lv-fieldset label="Mode">
+                            <lv-select v-model="mode" :options="modes" :clearable="false"></lv-select>
+                        </lv-fieldset>
+                    </lv-grid-column>
+                </lv-grid-row>
+                <lv-grid-row gap="1.5rem">
+                    <lv-grid-column :width="6" :md="12">
+                        <lv-fieldset label="Note Names">
+                            <lv-select v-model="showDegrees" :options="showDegreesOptions" :clearable="false"></lv-select>
+                        </lv-fieldset>
+                    </lv-grid-column>
+                    <lv-grid-column :width="6" :md="12">
+                        <lv-fieldset label="Notes visibility">
+                            <lv-select v-model="showRest" :options="showRestOptions" :clearable="false"></lv-select>
+                        </lv-fieldset>
+                    </lv-grid-column>
+                </lv-grid-row>
+                <lv-grid-row gap="1.5rem">
+                    <lv-grid-column :width="6" :md="12">
+                        <lv-fieldset label="Degrees">
+                            <lv-card>
+                                <lv-flex>
+                                    <lv-checkbox label="1st" v-model="degrees['1']" :disabled="!availableDegrees.includes(1)"/>
+                                    <lv-checkbox label="2nd" v-model="degrees['2']" :disabled="!availableDegrees.includes(2)"/>
+                                    <lv-checkbox label="3rd" v-model="degrees['3']" :disabled="!availableDegrees.includes(3)"/>
+                                    <lv-checkbox label="4th" v-model="degrees['4']" :disabled="!availableDegrees.includes(4)"/>
+                                    <lv-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)"/>
+                                    <lv-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)"/>
+                                    <lv-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)"/>
+                                </lv-flex>
+                            </lv-card>
+                        </lv-fieldset>
+                    </lv-grid-column>
+                    <lv-grid-column :width="6" :md="12">
+                        <lv-fieldset label="Number of frets">
+                            <lv-card>
+                                <lv-slider :min="6" :max="19" :step="1" v-model="frets"></lv-slider>
+                            </lv-card>
+                        </lv-fieldset>
+                    </lv-grid-column>
+                </lv-grid-row>
+            </lv-grid>
         </div>
     </div>
 </template>
@@ -57,7 +87,12 @@ import {
     breakpointMixin,
     LvDrawer,
     LvButton,
-    LvIcon
+    LvIcon,
+    LvGrid,
+    LvGridRow,
+    LvGridColumn,
+    LvSlider,
+    LvSpinner,
 } from '@libvue/core';
 import { useUrlSearchParams } from "@vueuse/core";
 import VueFretboard from "./components/VueFretboard.vue";
@@ -79,13 +114,18 @@ export default {
         LvCard,
         LvDrawer,
         LvButton,
+        LvGrid,
+        LvGridRow,
+        LvGridColumn,
+        LvSlider,
+        LvSpinner,
     },
     data() {
         return {
             showFilters: false,
             theme: this.preferredColorScheme(),
             strings: ['E', 'A', 'D', 'G', 'B', 'E'],
-            frets: 19,
+            frets: 14,
             note: params.note || 'C',
             scale: params.scale || 'major',
             mode: Number.parseInt(params.mode, 10) || 1,

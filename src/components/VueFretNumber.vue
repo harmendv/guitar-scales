@@ -39,6 +39,7 @@ export default {
     border-right: 2px solid transparent;
     background: var(--border-color-light);
     color: var(--text-color);
+    flex-grow: 1;
 
     &--highlight {
         #{$self}__content {
@@ -60,20 +61,20 @@ export default {
         background: var(--border-color-light);
         z-index: 1;
         padding: 0;
-        width: 100%;
-        height: 0;
-        padding-bottom: 100%;
+        width: 34px;
+        height: 36px;
         display: flex;
         font-family: monospace;
-        font-size: clamp(7px, 1.2vw, 13px);
+        font-size:  13px;
         align-items: center;
         justify-content: center;
         border-radius: 6px;
     }
 
     &__number {
-        width: 100%;
-        height: 100%;
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
         position: absolute;
         top: 0;
         display: flex;
