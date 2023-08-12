@@ -120,7 +120,7 @@ export default {
     }
     &:first-of-type {
       border-right: 4px solid var(--border-color);
-      background-color: var(--background-color);
+      background-color: var(--border-color-light);
     }
     &:last-of-type {
       border-right: 0;
@@ -145,12 +145,12 @@ export default {
     position: relative;
     background: var(--border-color-light);
     z-index: 1;
-    width: 100%;
-    height: 0;
-    padding-bottom: 100%;
+      width: 34px;
+      height: 34px;
+      flex-shrink: 0;
     display: flex;
     font-family: monospace;
-    font-size: clamp(7px, 1.2vw, 13px);
+    font-size:  13px;
     align-items: center;
     justify-content: center;
     border-radius: 100%;
