@@ -4,8 +4,6 @@
         <div class="fixed" v-if="breakpoints.greaterOrEqual.lg">
             <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
         </div>
-
-        <img class="logo" src="./assets/logo.svg" alt="">
         
         <vue-fretboard
             :strings="strings"
