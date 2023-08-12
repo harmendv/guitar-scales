@@ -1,10 +1,12 @@
 <template>
     <div class="view">
-
+        
         <div class="fixed" v-if="breakpoints.greaterOrEqual.lg">
             <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
         </div>
 
+        <img class="logo" src="./assets/logo.svg" alt="">
+        
         <vue-fretboard
             :strings="strings"
             :highlight="highlight"
@@ -64,7 +66,7 @@
                         </lv-fieldset>
                     </lv-grid-column>
                     <lv-grid-column :width="6" :md="12">
-                        <lv-fieldset label="Number of frets">
+                        <lv-fieldset :label="`Number of frets (${frets})`">
                             <lv-card>
                                 <lv-slider :min="6" :max="19" :step="1" v-model="frets"></lv-slider>
                             </lv-card>
@@ -84,7 +86,7 @@ import {
     LvFieldset,
     LvThemeToggle,
     LvCard,
-    breakpointMixin,
+    useBreakpoints,
     LvDrawer,
     LvButton,
     LvIcon,
@@ -102,7 +104,12 @@ import { notes, getNoteByOffset } from "./utils/notes.js";
 const params = useUrlSearchParams('history');
 
 export default {
-    mixins: [breakpointMixin],
+    setup() {
+        const { breakpoints } = useBreakpoints();
+        return {
+            breakpoints,
+        }
+    },
     components: {
         LvIcon,
         VueFretboard,
@@ -125,7 +132,7 @@ export default {
             showFilters: false,
             theme: this.preferredColorScheme(),
             strings: ['E', 'A', 'D', 'G', 'B', 'E'],
-            frets: 14,
+            frets: Number.parseInt(params.frets, 10) || 13,
             note: params.note || 'C',
             scale: params.scale || 'major',
             mode: Number.parseInt(params.mode, 10) || 1,
@@ -164,6 +171,11 @@ export default {
         note: {
             handler(value) {
                 params.note = value;
+            },
+        },
+        frets: {
+            handler(value) {
+                params.frets = value;
             },
         },
         showDegrees: {
@@ -265,17 +277,8 @@ export default {
     width: 100%;
     max-width: 980px;
     margin: 0 auto;
-    min-width: 490px;
     display: flex;
     flex-direction: column;
-    &--mobile {
-        flex-direction: row;
-    }
 }
-.mobile-button {
-    position: fixed;
-    left: 0;
-    top: 0;
-    border-radius: 0;
-}
+
 </style>

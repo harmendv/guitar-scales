@@ -120,7 +120,7 @@ export default {
     }
     &:first-of-type {
       border-right: 4px solid var(--border-color);
-      background-color: var(--background-color);
+      background-color: var(--border-color-light);
     }
     &:last-of-type {
       border-right: 0;
