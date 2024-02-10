@@ -5,23 +5,24 @@ Visualize your guitar scales, find voicings and learn the intervals!
 Check it out here: https://harmendv.github.io/guitar-scales/
 
 ### Example
-![Example](example.png)
+![Example](example.png?v2)
 
 ## Features
 
 ### Supported scales
-- Major (Ionian)
-- Major Pentatonic
-- Minor Pentatonic
-- Major Blues
-- Minor Blues
-- Natural Minor (Aeolian)
+- Major
+- Melodic Minor
 - Harmonic Minor
-- Dorian
+- Harmonic Major
+- Diminished
+- Augmented
+- Whole Tone
 
-### Show intervals
-Only highlight certain intervals to easily find new voicings.
+### Show degrees
+Toggle between note names and degrees
 
-## Todo
-- Add all modes
-- Better interval notation
+### Modes
+With all scales you can change mode
+
+### Chords
+All available chord names are visible
