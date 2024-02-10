@@ -1,12 +1,12 @@
 <template>
     <div
-            class="vue-fret-number"
-            :class="{'vue-fret-number--highlight': !!highlight}"
-            :style="`--divider: ${frets};`"
+        class="vue-fret-number"
+        :class="{ 'vue-fret-number--highlight': !!highlight }"
+        :style="`--divider: ${frets};`"
     >
         <div class="vue-fret-number__content">
             <div class="vue-fret-number__number">
-                <slot/>
+                <slot />
             </div>
         </div>
     </div>
@@ -22,7 +22,7 @@ export default {
         highlight: {
             type: Boolean,
             default: false,
-        }
+        },
     },
 };
 </script>
@@ -43,9 +43,8 @@ export default {
 
     &--highlight {
         #{$self}__content {
-            background: var(--border-color)
+            background: var(--border-color);
         }
-
     }
 
     &:first-of-type {
@@ -65,7 +64,7 @@ export default {
         height: 36px;
         display: flex;
         font-family: monospace;
-        font-size:  13px;
+        font-size: 13px;
         align-items: center;
         justify-content: center;
         border-radius: 6px;

@@ -1,78 +1,141 @@
 <template>
     <div class="view">
-        
-        <div class="fixed" v-if="breakpoints.greaterOrEqual.lg">
-            <lv-theme-toggle class="theme-toggle" v-model="theme"></lv-theme-toggle>
+        <div
+            class="fixed"
+            v-if="breakpoints.greaterOrEqual.lg"
+        >
+            <lv-theme-toggle
+                class="theme-toggle"
+                v-model="theme"
+            ></lv-theme-toggle>
         </div>
-        
+
         <vue-fretboard
             :strings="strings"
             :highlight="highlight"
             :frets="frets"
-            :show-degrees="showDegrees"
-            :degrees="degrees"
+            :show-degrees="noteNames === 'degrees'"
             :root="note"
-            :show-rest="showRest"
+            :show-rest="noteVisibility === 'all'"
             v-space-after="2"
         />
-        <div class="options">
 
-            <lv-grid v-space-after="1" gap="1.5rem">
+        <lv-fieldset legend="Chords">
+            <vue-chords
+                :chords="chords"
+                v-space-after="2"
+            ></vue-chords>
+        </lv-fieldset>
+
+        <div
+            v-space-after="3"
+            class="options"
+        >
+            <lv-grid
+                v-space-after="1"
+                gap="1.5rem"
+            >
                 <lv-grid-row gap="1.5rem">
-                    <lv-grid-column :width="4" :md="12">
-                        <lv-fieldset label="Tonic">
-                            <lv-select v-model="note" :options="notes" :clearable="false"></lv-select>
+                    <lv-grid-column
+                        :width="4"
+                        :md="12"
+                    >
+                        <lv-fieldset legend="Root">
+                            <lv-select
+                                v-model="note"
+                                :options="notes"
+                                :clearable="false"
+                            ></lv-select>
                         </lv-fieldset>
                     </lv-grid-column>
-                    <lv-grid-column :width="4" :md="12">
-                        <lv-fieldset label="Scale">
-                            <lv-select v-model="scale" :options="scales" :clearable="false"></lv-select>
+                    <lv-grid-column
+                        :width="4"
+                        :md="12"
+                    >
+                        <lv-fieldset legend="Scale">
+                            <lv-select
+                                v-model="scale"
+                                :options="scales"
+                                :clearable="false"
+                            ></lv-select>
                         </lv-fieldset>
                     </lv-grid-column>
-                    <lv-grid-column :width="4" :md="12">
-                        <lv-fieldset label="Mode">
-                            <lv-select v-model="mode" :options="modes" :clearable="false"></lv-select>
+                    <lv-grid-column
+                        :width="4"
+                        :md="12"
+                    >
+                        <lv-fieldset legend="Mode">
+                            <lv-select
+                                v-model="mode"
+                                :options="modes"
+                                :clearable="false"
+                            ></lv-select>
                         </lv-fieldset>
                     </lv-grid-column>
                 </lv-grid-row>
                 <lv-grid-row gap="1.5rem">
-                    <lv-grid-column :width="6" :md="12">
-                        <lv-fieldset label="Note Names">
-                            <lv-select v-model="showDegrees" :options="showDegreesOptions" :clearable="false"></lv-select>
+                    <lv-grid-column
+                        :width="4"
+                        :md="12"
+                    >
+                        <lv-fieldset legend="Note Names">
+                            <lv-select
+                                v-model="noteNames"
+                                :options="noteNamesOptions"
+                                :clearable="false"
+                            ></lv-select>
                         </lv-fieldset>
                     </lv-grid-column>
-                    <lv-grid-column :width="6" :md="12">
-                        <lv-fieldset label="Notes visibility">
-                            <lv-select v-model="showRest" :options="showRestOptions" :clearable="false"></lv-select>
+                    <lv-grid-column
+                        :width="4"
+                        :md="12"
+                    >
+                        <lv-fieldset legend="Notes visibility">
+                            <lv-select
+                                v-model="noteVisibility"
+                                :options="noteVisibilityOptions"
+                                :clearable="false"
+                            ></lv-select>
                         </lv-fieldset>
                     </lv-grid-column>
-                </lv-grid-row>
-                <lv-grid-row gap="1.5rem">
-                    <lv-grid-column :width="6" :md="12">
-                        <lv-fieldset label="Degrees">
-                            <lv-card>
-                                <lv-flex>
-                                    <lv-checkbox label="1st" v-model="degrees['1']" :disabled="!availableDegrees.includes(1)"/>
-                                    <lv-checkbox label="2nd" v-model="degrees['2']" :disabled="!availableDegrees.includes(2)"/>
-                                    <lv-checkbox label="3rd" v-model="degrees['3']" :disabled="!availableDegrees.includes(3)"/>
-                                    <lv-checkbox label="4th" v-model="degrees['4']" :disabled="!availableDegrees.includes(4)"/>
-                                    <lv-checkbox label="5th" v-model="degrees['5']" :disabled="!availableDegrees.includes(5)"/>
-                                    <lv-checkbox label="6th" v-model="degrees['6']" :disabled="!availableDegrees.includes(6)"/>
-                                    <lv-checkbox label="7th" v-model="degrees['7']" :disabled="!availableDegrees.includes(7)"/>
-                                </lv-flex>
-                            </lv-card>
-                        </lv-fieldset>
-                    </lv-grid-column>
-                    <lv-grid-column :width="6" :md="12">
-                        <lv-fieldset :label="`Number of frets (${frets})`">
-                            <lv-card>
-                                <lv-slider :min="6" :max="19" :step="1" v-model="frets"></lv-slider>
-                            </lv-card>
+                    <lv-grid-column
+                        :width="4"
+                        :md="12"
+                    >
+                        <lv-fieldset :legend="`Number of frets (${frets})`">
+                            <lv-slider
+                                :min="6"
+                                :max="19"
+                                :step="1"
+                                v-model="frets"
+                                realtime-update
+                            ></lv-slider>
                         </lv-fieldset>
                     </lv-grid-column>
                 </lv-grid-row>
             </lv-grid>
         </div>
+
+        <lv-flex
+            align-items="center"
+            justify-content="center"
+            direction="column"
+        >
+            <img
+                src="/logo.svg"
+                alt=""
+                width="200"
+            />
+            <span
+                >made by
+                <a
+                    class="link"
+                    target="_blank"
+                    href="https://github.com/harmendv"
+                    >harmendv</a
+                ></span
+            >
+        </lv-flex>
     </div>
 </template>
 
@@ -93,78 +156,74 @@ import {
     LvGridColumn,
     LvSlider,
     LvSpinner,
-} from '@libvue/core';
+} from "@libvue/core";
 import { useUrlSearchParams } from "@vueuse/core";
 import VueFretboard from "./components/VueFretboard.vue";
+import VueChords from "./components/VueChords.vue";
 import { scales, scalesFlatMap } from "./utils/scales.js";
 import { notes, getNoteByOffset } from "./utils/notes.js";
 
-const params = useUrlSearchParams('history');
+const params = useUrlSearchParams("history");
 
 export default {
     setup() {
         const { breakpoints } = useBreakpoints();
         return {
             breakpoints,
-        }
+        };
     },
     components: {
-        LvIcon,
-        VueFretboard,
-        LvCheckbox,
-        LvSelect,
-        LvFlex,
-        LvFieldset,
-        LvThemeToggle,
-        LvCard,
-        LvDrawer,
         LvButton,
+        LvCard,
+        LvCheckbox,
+        LvDrawer,
+        LvFieldset,
+        LvFlex,
         LvGrid,
-        LvGridRow,
         LvGridColumn,
+        LvGridRow,
+        LvIcon,
+        LvSelect,
         LvSlider,
         LvSpinner,
+        LvThemeToggle,
+        VueChords,
+        VueFretboard,
     },
     data() {
         return {
             showFilters: false,
             theme: this.preferredColorScheme(),
-            strings: ['E', 'A', 'D', 'G', 'B', 'E'],
-            frets: Number.parseInt(params.frets, 10) || 13,
-            note: params.note || 'C',
-            scale: params.scale || 'major',
+            strings: ["E", "A", "D", "G", "B", "E"],
+            frets: Number.parseInt(params.frets, 10) || 18,
+            note: params.note || "C",
+            scale: params.scale || "major",
             mode: Number.parseInt(params.mode, 10) || 1,
-            showDegrees: params.showDegrees || 'false',
-            degrees: params.degrees ? (JSON.parse(decodeURIComponent(params.degrees))) : ({
-                '1': true,
-                '2': true,
-                '3': true,
-                '4': true,
-                '5': true,
-                '6': true,
-                '7': true,
-            }),
-            showRest: params.showRest || 'true',
-            showDegreesOptions: [
-                {label: 'Show Scale Degrees', value: 'true'},
-                {label: 'Show Scale Notes', value: 'false'}
+            noteNames: params.noteNames || "degrees",
+            noteVisibility: params.noteVisibility || "only-scale",
+            noteNamesOptions: [
+                { label: "Scale Degrees", value: "degrees" },
+                { label: "Scale Notes", value: "notes" },
             ],
-            showRestOptions: [
-                {label: 'All Notes', value: 'true'},
-                {label: 'Only Scale Notes', value: 'false'}
-            ]
-        }
+            noteVisibilityOptions: [
+                { label: "All Notes", value: "all" },
+                { label: "Only Scale Notes", value: "only-scale" },
+            ],
+        };
     },
     mounted() {
-        if (localStorage.getItem('theme')) {
-            this.theme = localStorage.getItem('theme');
-            document.body.setAttribute('data-theme', this.theme);
+        if (localStorage.getItem("theme")) {
+            this.theme = localStorage.getItem("theme");
+            document.body.setAttribute("data-theme", this.theme);
+        }
+        if (this.breakpoints.smallerOrEqual.lg && !params.frets) {
+            this.frets = 9;
         }
     },
     watch: {
         theme(val) {
-            document.body.setAttribute('data-theme', val);
-            localStorage.setItem('theme', val);
+            document.body.setAttribute("data-theme", val);
+            localStorage.setItem("theme", val);
         },
         note: {
             handler(value) {
@@ -176,14 +235,14 @@ export default {
                 params.frets = value;
             },
         },
-        showDegrees: {
+        noteNames: {
             handler(value) {
-                params.showDegrees = value;
+                params.noteNames = value;
             },
         },
-        showRest: {
+        noteVisibility: {
             handler(value) {
-                params.showRest = value;
+                params.noteVisibility = value;
             },
         },
         scale: {
@@ -197,40 +256,46 @@ export default {
                 params.mode = value;
             },
         },
-        degrees: {
-            handler(value) {
-                params.degrees = JSON.stringify(value);
-            },
-            deep: true,
-        }
     },
     computed: {
         scales() {
             const options = [];
             scales.forEach((scale) => {
-                options.push({label: scale.name, value: scale.slug})
-            })
+                options.push({ label: scale.name, value: scale.slug });
+            });
             return options;
         },
         selectedScaleIndex() {
             return scalesFlatMap.indexOf(this.scale);
         },
-        selectedModeOffset() {
-            return scales[this.selectedScaleIndex].formula[this.mode].chromatic;
-        },
         notes() {
             const options = [];
             notes.forEach((note) => {
-                options.push({label: note.name, value: note.name})
-            })
+                options.push({ label: note.name, value: note.name });
+            });
             return options;
+        },
+        chords() {
+            const chords = [];
+            const formula = scales[this.selectedScaleIndex].formula;
+            formula.forEach((entry, index) => {
+                // Get the corresponding note from computed notes();
+                const note = this.highlight[index].note;
+
+                chords.push({
+                    note,
+                    chord: entry.chord,
+                    degree: entry.degree,
+                });
+            });
+            return chords;
         },
         modes() {
             const options = [];
             const formula = scales[this.selectedScaleIndex].formula;
             formula.forEach((entry) => {
-                options.push({label: entry.mode, value: entry.degree})
-            })
+                options.push({ label: entry.mode, value: entry.id });
+            });
             return options;
         },
         highlight() {
@@ -239,28 +304,32 @@ export default {
             const scaleFormula = scales[scaleIndex].formula;
             const scaleFormulaLength = scaleFormula.length;
             // Calculate the extra note offset caused by the mode
-            const modeOffset = scales[scaleIndex].formula[this.mode - 1].chromatic - 1;
+            const modeOffset =
+                scales[scaleIndex].formula[this.mode - 1].chromatic - 1;
             for (let i = 0; i < scaleFormulaLength; i++) {
                 highlight.push({
-                    note: getNoteByOffset(`${this.note}`, scaleFormula[i].chromatic - 1 + (12 - modeOffset)),
-                    degree: scaleFormula[i].degree
-                })
+                    note: getNoteByOffset(
+                        `${this.note}`,
+                        scaleFormula[i].chromatic - 1 + (12 - modeOffset)
+                    ),
+                    degree: scaleFormula[i].degree,
+                });
             }
             return highlight;
         },
-        availableDegrees() {
-            return this.highlight.flatMap((i) => i.degree)
-        }
     },
     methods: {
         preferredColorScheme() {
-            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                return 'dark';
+            if (
+                window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+            ) {
+                return "dark";
             }
-            return 'light';
+            return "light";
         },
-    }
-}
+    },
+};
 </script>
 
 <style lang="scss">
@@ -279,4 +348,7 @@ export default {
     flex-direction: column;
 }
 
+.link {
+    color: var(--color-primary);
+}
 </style>
