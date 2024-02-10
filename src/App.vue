@@ -10,8 +10,6 @@
             ></lv-theme-toggle>
         </div>
 
-
-
         <vue-fretboard
             :strings="strings"
             :highlight="highlight"
@@ -29,7 +27,10 @@
             ></vue-chords>
         </lv-fieldset>
 
-        <div v-space-after="3" class="options">
+        <div
+            v-space-after="3"
+            class="options"
+        >
             <lv-grid
                 v-space-after="1"
                 gap="1.5rem"
@@ -115,14 +116,26 @@
             </lv-grid>
         </div>
 
-      <lv-flex align-items="center" justify-content="center" direction="column">
-        <img
-          src="/logo.svg"
-          alt=""
-          width="200"
-        />
-        <span>made by <a class="link" target="_blank" href="https://github.com/harmendv">harmendv</a></span>
-      </lv-flex>
+        <lv-flex
+            align-items="center"
+            justify-content="center"
+            direction="column"
+        >
+            <img
+                src="/logo.svg"
+                alt=""
+                width="200"
+            />
+            <span
+                >made by
+                <a
+                    class="link"
+                    target="_blank"
+                    href="https://github.com/harmendv"
+                    >harmendv</a
+                ></span
+            >
+        </lv-flex>
     </div>
 </template>
 
@@ -182,7 +195,7 @@ export default {
             showFilters: false,
             theme: this.preferredColorScheme(),
             strings: ["E", "A", "D", "G", "B", "E"],
-            frets: Number.parseInt(params.frets, 10) || 15,
+            frets: Number.parseInt(params.frets, 10) || 18,
             note: params.note || "C",
             scale: params.scale || "major",
             mode: Number.parseInt(params.mode, 10) || 1,
@@ -202,6 +215,9 @@ export default {
         if (localStorage.getItem("theme")) {
             this.theme = localStorage.getItem("theme");
             document.body.setAttribute("data-theme", this.theme);
+        }
+        if (this.breakpoints.smallerOrEqual.lg && !params.frets) {
+            this.frets = 9;
         }
     },
     watch: {
@@ -252,9 +268,6 @@ export default {
         selectedScaleIndex() {
             return scalesFlatMap.indexOf(this.scale);
         },
-        selectedModeOffset() {
-            return scales[this.selectedScaleIndex].formula[this.mode].chromatic;
-        },
         notes() {
             const options = [];
             notes.forEach((note) => {
@@ -304,9 +317,6 @@ export default {
             }
             return highlight;
         },
-        availableDegrees() {
-            return this.highlight.flatMap((i) => i.degree);
-        },
     },
     methods: {
         preferredColorScheme() {
@@ -339,6 +349,6 @@ export default {
 }
 
 .link {
-  color: var(--color-primary);
+    color: var(--color-primary);
 }
 </style>
