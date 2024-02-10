@@ -10,6 +10,8 @@
             ></lv-theme-toggle>
         </div>
 
+
+
         <vue-fretboard
             :strings="strings"
             :highlight="highlight"
@@ -27,7 +29,7 @@
             ></vue-chords>
         </lv-fieldset>
 
-        <div class="options">
+        <div v-space-after="3" class="options">
             <lv-grid
                 v-space-after="1"
                 gap="1.5rem"
@@ -112,6 +114,15 @@
                 </lv-grid-row>
             </lv-grid>
         </div>
+
+      <lv-flex align-items="center" justify-content="center" direction="column">
+        <img
+          src="/logo.svg"
+          alt=""
+          width="200"
+        />
+        <span>made by <a class="link" target="_blank" href="https://github.com/harmendv">harmendv</a></span>
+      </lv-flex>
     </div>
 </template>
 
@@ -325,5 +336,9 @@ export default {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+}
+
+.link {
+  color: var(--color-primary);
 }
 </style>
