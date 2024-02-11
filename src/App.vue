@@ -126,15 +126,23 @@
                 alt=""
                 width="200"
             />
-            <span
-                >made by
+            <span v-space-after="1">
+                made by
                 <a
                     class="link"
                     target="_blank"
                     href="https://github.com/harmendv"
                     >harmendv</a
-                ></span
+                >
+            </span >
+            <div
+                v-if="!breakpoints.greaterOrEqual.lg"
             >
+                <lv-theme-toggle
+                    class="theme-toggle"
+                    v-model="theme"
+                ></lv-theme-toggle>
+            </div>
         </lv-flex>
     </div>
 </template>
