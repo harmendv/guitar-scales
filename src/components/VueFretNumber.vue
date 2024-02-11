@@ -60,8 +60,6 @@ export default {
         background: var(--border-color-light);
         z-index: 1;
         padding: 0;
-
-
         width: clamp(24px, 3cqw, 32px);
         height: clamp(24px, 3cqw, 32px);
         display: flex;
