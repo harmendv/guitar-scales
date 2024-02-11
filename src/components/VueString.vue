@@ -103,9 +103,10 @@ export default {
     &__cell {
         position: relative;
 
-        width: calc(100% / var(--divider));
+        //width: calc(100% / var(--divider));
+        flex-grow: 1;
         text-align: center;
-        padding: 1cqw;
+        padding: clamp(10px, 1cqw, 14px);
         display: flex;
         justify-content: center;
         border-right: 2px solid var(--border-color);
@@ -147,12 +148,13 @@ export default {
         position: relative;
         background: var(--border-color-light);
         z-index: 1;
-        width: 3cqw;
-        height: 3cqw;
+        width: clamp(24px, 3cqw, 32px);
+        height: clamp(24px, 3cqw, 32px);
         flex-shrink: 0;
         display: flex;
         font-family: monospace;
-        font-size: 2cqw;
+        font-size: clamp(14px, 1.8cqw, 18px);
+        font-weight: bold;
         align-items: center;
         justify-content: center;
         border-radius: 100%;
