@@ -148,7 +148,7 @@
                 class="theme-toggle"
                 v-model="theme"
             ></lv-theme-toggle>
-            toggle dark/night
+            toggle dark/light
         </lv-flex>
     </div>
 </template>
