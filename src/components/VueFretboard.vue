@@ -68,6 +68,8 @@ export default {
 
 <style lang="scss">
 .vue-fretboard {
+    container-name: fretboard;
+    container-type: inline-size;
     display: flex;
     flex-direction: column;
     overflow-x: auto;

@@ -195,7 +195,7 @@ export default {
             showFilters: false,
             theme: this.preferredColorScheme(),
             strings: ["E", "A", "D", "G", "B", "E"],
-            frets: Number.parseInt(params.frets, 10) || 18,
+            frets: Number.parseInt(params.frets, 10) || 14,
             note: params.note || "C",
             scale: params.scale || "major",
             mode: Number.parseInt(params.mode, 10) || 1,
@@ -215,9 +215,6 @@ export default {
         if (localStorage.getItem("theme")) {
             this.theme = localStorage.getItem("theme");
             document.body.setAttribute("data-theme", this.theme);
-        }
-        if (this.breakpoints.smallerOrEqual.lg && !params.frets) {
-            this.frets = 9;
         }
     },
     watch: {
