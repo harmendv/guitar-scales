@@ -10,6 +10,28 @@
             ></lv-theme-toggle>
         </div>
 
+        <lv-flex
+            align-items="center"
+            justify-content="center"
+            direction="column"
+            v-space-after="2"
+        >
+            <img
+                src="/logo.svg"
+                alt=""
+                width="200"
+            />
+            <span v-space-after="1">
+                made by
+                <a
+                    class="link"
+                    target="_blank"
+                    href="https://github.com/harmendv"
+                >harmendv</a
+                >
+            </span >
+        </lv-flex>
+
         <vue-fretboard
             :strings="strings"
             :highlight="highlight"
@@ -28,7 +50,7 @@
         </lv-fieldset>
 
         <div
-            v-space-after="3"
+            v-space-after="1"
             class="options"
         >
             <lv-grid
@@ -119,30 +141,14 @@
         <lv-flex
             align-items="center"
             justify-content="center"
-            direction="column"
+            direction="row"
+            v-if="!breakpoints.greaterOrEqual.lg"
         >
-            <img
-                src="/logo.svg"
-                alt=""
-                width="200"
-            />
-            <span v-space-after="1">
-                made by
-                <a
-                    class="link"
-                    target="_blank"
-                    href="https://github.com/harmendv"
-                    >harmendv</a
-                >
-            </span >
-            <div
-                v-if="!breakpoints.greaterOrEqual.lg"
-            >
-                <lv-theme-toggle
-                    class="theme-toggle"
-                    v-model="theme"
-                ></lv-theme-toggle>
-            </div>
+            <lv-theme-toggle
+                class="theme-toggle"
+                v-model="theme"
+            ></lv-theme-toggle>
+            toggle dark/night
         </lv-flex>
     </div>
 </template>
