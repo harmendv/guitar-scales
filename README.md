@@ -1,4 +1,4 @@
-# 🎸 guitar-scales
+![Logo](public/logo.svg)
 
 Visualize your guitar scales, find voicings and learn the intervals!
 

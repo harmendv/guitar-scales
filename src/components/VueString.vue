@@ -105,7 +105,7 @@ export default {
 
         width: calc(100% / var(--divider));
         text-align: center;
-        padding: 7px;
+        padding: 1cqw;
         display: flex;
         justify-content: center;
         border-right: 2px solid var(--border-color);
@@ -147,16 +147,15 @@ export default {
         position: relative;
         background: var(--border-color-light);
         z-index: 1;
-        width: 34px;
-        height: 34px;
+        width: 3cqw;
+        height: 3cqw;
         flex-shrink: 0;
         display: flex;
         font-family: monospace;
-        font-size: 13px;
+        font-size: 2cqw;
         align-items: center;
         justify-content: center;
         border-radius: 100%;
-        transition: 0.2s all;
         color: var(--text-color);
         &-content {
             position: absolute;
