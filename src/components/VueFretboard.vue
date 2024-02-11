@@ -1,15 +1,17 @@
 <template>
     <div class="vue-fretboard">
-        <vue-string
-            v-for="(start, index) in reversedStrings"
-            :frets="frets"
-            :start="start"
-            :key="index"
-            :highlight="highlight"
-            :root="root"
-            :show-degrees="showDegrees"
-            :show-rest="showRest"
-        />
+        <div class="vue-fretboard__strings">
+            <vue-string
+                v-for="(start, index) in reversedStrings"
+                :frets="frets"
+                :start="start"
+                :key="index"
+                :highlight="highlight"
+                :root="root"
+                :show-degrees="showDegrees"
+                :show-rest="showRest"
+            />
+        </div>
         <div class="vue-fretboard__fret-numbers">
             <vue-fret-number
                 v-for="(fret, index) in frets"
@@ -80,7 +82,9 @@ export default {
     border: 1px solid var(--border-color);
     overflow-y: hidden;
     box-shadow: var(--shadow);
-
+    &__strings {
+        flex-grow: 1;
+    }
     &__fret-numbers {
         position: relative;
         width: 100%;

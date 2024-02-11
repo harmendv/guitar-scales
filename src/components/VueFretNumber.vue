@@ -31,9 +31,9 @@ export default {
 .vue-fret-number {
     $self: &;
     position: relative;
-    width: calc(100% / var(--divider));
+    //width: calc(100% / var(--divider));
     text-align: center;
-    padding: 1cqw 1cqw;
+    padding: clamp(10px, 1cqw, 14px);
     display: flex;
     justify-content: center;
     border-right: 2px solid transparent;
@@ -60,19 +60,19 @@ export default {
         background: var(--border-color-light);
         z-index: 1;
         padding: 0;
-        width: 4cqw;
-        height: 4cqw;
+
+
+        width: clamp(24px, 3cqw, 32px);
+        height: clamp(24px, 3cqw, 32px);
         display: flex;
         font-family: monospace;
-        font-size: 2cqw;
+        font-size: clamp(14px, 1.8cqw, 18px);
         align-items: center;
         justify-content: center;
         border-radius: 6px;
     }
 
     &__number {
-        width: 4cqw;
-        height: 4cqw;
         flex-shrink: 0;
         position: absolute;
         top: 0;
