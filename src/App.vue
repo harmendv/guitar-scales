@@ -353,7 +353,7 @@ export default {
 
 .view {
     width: 100%;
-    max-width: 980px;
+    max-width: 1200px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
