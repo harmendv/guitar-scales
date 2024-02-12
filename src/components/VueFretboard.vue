@@ -7,6 +7,7 @@
                 :start="start"
                 :key="index"
                 :highlight="highlight"
+                :chord-tone-root="chordToneRoot"
                 :root="root"
                 :show-degrees="showDegrees"
                 :show-rest="showRest"
@@ -59,6 +60,10 @@ export default {
             type: String,
             required: true,
         },
+        chordToneRoot: {
+            type: [String, Number],
+            default: null,
+        }
     },
     computed: {
         reversedStrings() {
