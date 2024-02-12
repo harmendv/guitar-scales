@@ -5,9 +5,7 @@
         :style="`--divider: ${frets};`"
     >
         <div class="vue-fret-number__content">
-            <div class="vue-fret-number__number">
-                <slot />
-            </div>
+            <slot />
         </div>
     </div>
 </template>
@@ -68,15 +66,6 @@ export default {
         align-items: center;
         justify-content: center;
         border-radius: 6px;
-    }
-
-    &__number {
-        flex-shrink: 0;
-        position: absolute;
-        top: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
     }
 }
 </style>
