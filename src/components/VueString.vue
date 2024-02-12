@@ -64,6 +64,10 @@ export default {
             type: String,
             required: true,
         },
+        chordIndex: {
+            type: [String, Number],
+            default: null,
+        }
     },
     computed: {
         highlightNotes() {

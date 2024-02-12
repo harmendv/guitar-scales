@@ -36,6 +36,7 @@
             :strings="strings"
             :highlight="highlight"
             :frets="frets"
+            :chord-index="chord"
             :show-degrees="noteNames === 'degrees'"
             :root="note"
             :show-rest="noteVisibility === 'all'"
@@ -45,7 +46,9 @@
         <lv-fieldset legend="Chords">
             <vue-chords
                 :chords="chords"
+                :active="chord"
                 v-space-after="2"
+                @click-chord="onClickChord"
             ></vue-chords>
         </lv-fieldset>
 
@@ -213,6 +216,7 @@ export default {
             note: params.note || "C",
             scale: params.scale || "major",
             mode: Number.parseInt(params.mode, 10) || 1,
+            chord: Number.parseInt(params.chord, 10) || null,
             noteNames: params.noteNames || "degrees",
             noteVisibility: params.noteVisibility || "only-scale",
             noteNamesOptions: [
@@ -260,6 +264,11 @@ export default {
             handler(value) {
                 this.mode = 1;
                 params.scale = value;
+            },
+        },
+        chord: {
+            handler(value) {
+                params.chord = value;
             },
         },
         mode: {
@@ -339,6 +348,13 @@ export default {
             }
             return "light";
         },
+        onClickChord(index) {
+            if(this.chord === index) {
+                this.chord = null;
+            } else {
+                this.chord = index;
+            }
+        }
     },
 };
 </script>
