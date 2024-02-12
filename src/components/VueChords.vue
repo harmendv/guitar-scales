@@ -1,7 +1,7 @@
 <template>
     <div class="vue-chords">
         <lv-flex fill :wrap="false" >
-            <lv-card class="vue-chords__chord" :padding="false" inline v-for="(chord, index) in chords" :class="{'vue-chords__chord--active': active === index}" @click="onClickChord(index)">
+            <lv-card class="vue-chords__chord" :padding="false" inline v-for="(chord, index) in chords" :class="{'vue-chords__chord--active': active === index + 1}" @click="onClickChord(index)">
                 <div class="vue-chords__chord-degree">{{ chord.degree }}</div>
                 <div class="vue-chords__chord-name">{{ chord.note }}{{ chord.chord }}</div>
             </lv-card>
@@ -36,7 +36,7 @@ export default {
     emits: ['click-chord'],
     methods: {
         onClickChord(index) {
-            this.$emit('click-chord', index);
+            this.$emit('click-chord', index + 1);
         }
     }
 };

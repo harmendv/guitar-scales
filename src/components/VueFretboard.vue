@@ -7,7 +7,7 @@
                 :start="start"
                 :key="index"
                 :highlight="highlight"
-                :chord-index="chordIndex"
+                :chord-tone-root="chordToneRoot"
                 :root="root"
                 :show-degrees="showDegrees"
                 :show-rest="showRest"
@@ -60,7 +60,7 @@ export default {
             type: String,
             required: true,
         },
-        chordIndex: {
+        chordToneRoot: {
             type: [String, Number],
             default: null,
         }

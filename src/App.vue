@@ -36,7 +36,7 @@
             :strings="strings"
             :highlight="highlight"
             :frets="frets"
-            :chord-index="chord"
+            :chord-tone-root="chordToneRoot"
             :show-degrees="noteNames === 'degrees'"
             :root="note"
             :show-rest="noteVisibility === 'all'"
@@ -273,11 +273,15 @@ export default {
         },
         mode: {
             handler(value) {
+                this.chord = null;
                 params.mode = value;
             },
         },
     },
     computed: {
+        chordToneRoot() {
+            return this.chords[this.chord - 1]?.note ?? null;
+        },
         scales() {
             const options = [];
             scales.forEach((scale) => {
@@ -324,8 +328,7 @@ export default {
             const scaleFormula = scales[scaleIndex].formula;
             const scaleFormulaLength = scaleFormula.length;
             // Calculate the extra note offset caused by the mode
-            const modeOffset =
-                scales[scaleIndex].formula[this.mode - 1].chromatic - 1;
+            const modeOffset = scales[scaleIndex].formula[this.mode - 1].chromatic - 1;
             for (let i = 0; i < scaleFormulaLength; i++) {
                 highlight.push({
                     note: getNoteByOffset(
@@ -335,6 +338,30 @@ export default {
                     degree: scaleFormula[i].degree,
                 });
             }
+            // Now that we have prepared all highlight notes, create a proxy and
+            // add the chord tones
+            if (this.chord !== null) {
+                const highlightProxy = new Proxy(highlight, {
+                    get(target, prop) {
+                        if (!isNaN(prop)) {
+                            prop = parseInt(prop, 10);
+                            if (prop < 0) {
+                                prop += target.length;
+                            } else if (prop >= target.length) {
+                                prop -= target.length;
+                            }
+                        }
+                        return target[prop];
+                    }
+                });
+                // Set root to chordTone
+                highlightProxy[this.chord - 1]['chordTone'] = true;
+                highlightProxy[this.chord - 1 + 2]['chordTone'] = true;
+                highlightProxy[this.chord - 1 + 4]['chordTone'] = true;
+                highlightProxy[this.chord - 1 + 6]['chordTone'] = true;
+            }
+
+
             return highlight;
         },
     },

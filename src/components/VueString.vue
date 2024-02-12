@@ -11,11 +11,9 @@
             <div
                 class="vue-string__note"
                 :class="{
-                    'vue-string__note--highlight':
-                        !!note.highlight,
-                    'vue-string__note--root': note.name === root,
-                    'vue-string__note--hidden':
-                        !note.highlight && showRest !== true,
+                    'vue-string__note--highlight': chordToneRoot ? !!note.chordTone : !!note.highlight ,
+                    'vue-string__note--root': chordToneRoot ? note.name === chordToneRoot : note.name === root,
+                    'vue-string__note--hidden': !note.highlight && (showRest !== true || chordToneRoot),
                 }"
             >
                 <div class="vue-string__note-content">
@@ -64,7 +62,7 @@ export default {
             type: String,
             required: true,
         },
-        chordIndex: {
+        chordToneRoot: {
             type: [String, Number],
             default: null,
         }
@@ -76,16 +74,19 @@ export default {
         notes() {
             const notes = [];
             for (let i = 0; i < this.frets; i++) {
+                // Get the note by offset
                 const note = getNoteByOffset(this.start, i);
+                // Get the index of the note (to check if root)
                 const highlightNoteIndex = this.highlightNotes.indexOf(note);
+                // Check if the note exists in highlight
+                const chordTone = this.highlight[highlightNoteIndex]?.chordTone;
+
                 const obj = {
                     name: note,
                     highlight: !!this.highlightNotes.includes(note),
                     root: highlightNoteIndex === 0,
-                    degree:
-                        highlightNoteIndex >= 0
-                            ? this.highlight[highlightNoteIndex].degree
-                            : false,
+                    chordTone: !!chordTone,
+                    degree: highlightNoteIndex >= 0 ? this.highlight[highlightNoteIndex].degree : false,
                 };
                 notes.push(obj);
             }
@@ -182,6 +183,9 @@ export default {
         }
         &--hidden {
             opacity: 0;
+        }
+        &--chord-tone {
+            outline: 5px dashed yellow
         }
     }
 
