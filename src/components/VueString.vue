@@ -11,9 +11,10 @@
             <div
                 class="vue-string__note"
                 :class="{
-                    'vue-string__note--highlight': chordToneRoot ? !!note.chordTone : !!note.highlight ,
+                    'vue-string__note--highlight': chordToneRoot ? !!note.chordTone : !!note.highlight,
                     'vue-string__note--root': chordToneRoot ? note.name === chordToneRoot : note.name === root,
-                    'vue-string__note--hidden': !note.highlight && (showRest !== true || chordToneRoot),
+                    'vue-string__note--scale': chordToneRoot && !note.chordTone && note.highlight,
+                    'vue-string__note--hidden': !note.highlight && (showRest !== true),
                 }"
             >
                 <div class="vue-string__note-content">
@@ -141,6 +142,9 @@ export default {
                     background: var(--color-primary);
                     color: #fff;
                 }
+                &--scale {
+                    background: var(--color-primary-dimmed);
+                }
                 &--root {
                     background: var(--color-danger);
                     color: #fff;
@@ -151,7 +155,7 @@ export default {
 
     &__note {
         position: relative;
-        background: var(--border-color-light);
+        background: var(--background-color);
         z-index: 1;
         width: clamp(24px, 3cqw, 32px);
         height: clamp(24px, 3cqw, 32px);
@@ -164,6 +168,9 @@ export default {
         justify-content: center;
         border-radius: 100%;
         color: var(--text-color);
+        transition: .2s all;
+        border: 2px solid transparent;
+
         &-content {
             position: absolute;
             width: 100%;
@@ -176,6 +183,11 @@ export default {
         &--highlight {
             background: var(--color-primary);
             color: #fff;
+        }
+        &--scale {
+            background: var(--color-primary-dimmed);
+            border: 2px solid var(--color-primary);
+            color: var(--color-primary);
         }
         &--root {
             background: var(--color-danger);
