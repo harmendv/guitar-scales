@@ -225,8 +225,16 @@ export default {
                 { label: "Only Scale Notes", value: "only-scale" },
             ],
             tuningOptions: [
-                { label: "EADGBE (Guitar)", value: JSON.stringify(["E", "A", "D", "G", "B", "E"]) },
-                { label: "GCEA (Ukelele)", value: JSON.stringify(["G", "C", "E", "A"]) },
+                { label: "Default", value: JSON.stringify(["E", "A", "D", "G", "B", "E"]) },
+                { label: "Drop-C", value: JSON.stringify(["C", "G", "C", "F", "A", "D"]) },
+                { label: "Drop-D", value: JSON.stringify(["D", "A", "D", "G", "B", "E"]) },
+                { label: "Open C", value: JSON.stringify(["C", "G", "C", "G", "C", "E"]) },
+                { label: "Open D", value: JSON.stringify(["D", "A", "D", "F♯", "A", "D"]) },
+                { label: "Open E", value: JSON.stringify(["E", "B", "E", "G♯", "B", "E"]) },
+                { label: "Open G", value: JSON.stringify(["D", "G", "D", "G", "B", "D"]) },
+                { label: "DAD-GAD", value: JSON.stringify(["D", "A", "D", "G", "A", "D"]) },
+                { label: "B standard", value: JSON.stringify(["B", "E", "A", "D", "F♯", "B"]) },
+                { label: "Ukelele", value: JSON.stringify(["G", "C", "E", "A"]) },
             ],
         };
     },
