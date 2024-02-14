@@ -186,8 +186,6 @@ export default {
         }
         &--scale {
             background: var(--color-primary-dimmed);
-            border: 2px solid var(--color-primary);
-            color: var(--color-primary);
         }
         &--root {
             background: var(--color-danger);
