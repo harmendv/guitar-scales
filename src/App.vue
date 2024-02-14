@@ -33,9 +33,9 @@
         </lv-flex>
 
         <vue-fretboard
-            :strings="strings"
+            :strings="JSON.parse(tuning)"
             :highlight="highlight"
-            :frets="frets"
+            :frets="20"
             :chord-tone-root="chordToneRoot"
             :show-degrees="noteNames === 'degrees'"
             :root="note"
@@ -127,14 +127,12 @@
                         :width="4"
                         :md="12"
                     >
-                        <lv-fieldset :legend="`Number of frets (${frets})`">
-                            <lv-slider
-                                :min="6"
-                                :max="19"
-                                :step="1"
-                                v-model="frets"
-                                realtime-update
-                            ></lv-slider>
+                        <lv-fieldset legend="Tuning">
+                            <lv-select
+                                v-model="tuning"
+                                :options="tuningOptions"
+                                :clearable="false"
+                            ></lv-select>
                         </lv-fieldset>
                     </lv-grid-column>
                 </lv-grid-row>
@@ -211,12 +209,11 @@ export default {
         return {
             showFilters: false,
             theme: this.preferredColorScheme(),
-            strings: ["E", "A", "D", "G", "B", "E"],
-            frets: Number.parseInt(params.frets, 10) || 14,
             note: params.note || "C",
             scale: params.scale || "major",
             mode: Number.parseInt(params.mode, 10) || 1,
             chord: Number.parseInt(params.chord, 10) || null,
+            tuning: params.tuning || JSON.stringify(["E", "A", "D", "G", "B", "E"]),
             noteNames: params.noteNames || "degrees",
             noteVisibility: params.noteVisibility || "only-scale",
             noteNamesOptions: [
@@ -226,6 +223,18 @@ export default {
             noteVisibilityOptions: [
                 { label: "All Notes", value: "all" },
                 { label: "Only Scale Notes", value: "only-scale" },
+            ],
+            tuningOptions: [
+                { label: "Default", value: JSON.stringify(["E", "A", "D", "G", "B", "E"]) },
+                { label: "Drop-C", value: JSON.stringify(["C", "G", "C", "F", "A", "D"]) },
+                { label: "Drop-D", value: JSON.stringify(["D", "A", "D", "G", "B", "E"]) },
+                { label: "Open C", value: JSON.stringify(["C", "G", "C", "G", "C", "E"]) },
+                { label: "Open D", value: JSON.stringify(["D", "A", "D", "F♯", "A", "D"]) },
+                { label: "Open E", value: JSON.stringify(["E", "B", "E", "G♯", "B", "E"]) },
+                { label: "Open G", value: JSON.stringify(["D", "G", "D", "G", "B", "D"]) },
+                { label: "DAD-GAD", value: JSON.stringify(["D", "A", "D", "G", "A", "D"]) },
+                { label: "B standard", value: JSON.stringify(["B", "E", "A", "D", "F♯", "B"]) },
+                { label: "Ukelele", value: JSON.stringify(["G", "C", "E", "A"]) },
             ],
         };
     },
@@ -245,9 +254,9 @@ export default {
                 params.note = value;
             },
         },
-        frets: {
+        tuning: {
             handler(value) {
-                params.frets = value;
+                params.tuning = value;
             },
         },
         noteNames: {
