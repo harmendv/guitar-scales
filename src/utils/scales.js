@@ -1,4 +1,4 @@
-/* Array of all the notes */
+/* Array of all the scales */
 const scales = [
     {
         id: 1,
@@ -302,7 +302,7 @@ const scales = [
             {
                 chromatic: 4,
                 id: 2,
-                degree: "♭3",
+                degree: "#2",
                 mode: "Inverted Augmented (2)",
                 chord: "6♯5",
             },
