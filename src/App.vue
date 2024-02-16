@@ -177,6 +177,7 @@ import VueFretboard from "./components/VueFretboard.vue";
 import VueChords from "./components/VueChords.vue";
 import { scales, scalesFlatMap } from "./utils/scales.js";
 import { notes, getNoteByOffset } from "./utils/notes.js";
+import { chordsByPrimaryAbbreviation } from './utils/chords.js';
 
 const params = useUrlSearchParams("history");
 
@@ -291,6 +292,12 @@ export default {
         chordToneRoot() {
             return this.chords[this.chord - 1]?.note ?? null;
         },
+        chordToneExtension() {
+            return this.chords[this.chord - 1]?.chord ?? null;
+        },
+        chordIntervals() {
+            return chordsByPrimaryAbbreviation[this.chordToneExtension]?.intervals ?? null;
+        },
         scales() {
             const options = [];
             scales.forEach((scale) => {
@@ -363,11 +370,18 @@ export default {
                         return target[prop];
                     }
                 });
-                // Set root to chordTone
+
+                // Set the chord tones info in highlight object.
                 highlightProxy[this.chord - 1]['chordTone'] = true;
                 highlightProxy[this.chord - 1 + 2]['chordTone'] = true;
                 highlightProxy[this.chord - 1 + 4]['chordTone'] = true;
-                highlightProxy[this.chord - 1 + 6]['chordTone'] = true;
+                if(scaleFormulaLength === 6) {
+                    // if aug or whole tone, use 1 3 5 6
+                    highlightProxy[this.chord - 1 + 5]['chordTone'] = true;
+                } else {
+                    highlightProxy[this.chord - 1 + 6]['chordTone'] = true;
+                }
+
             }
 
 
