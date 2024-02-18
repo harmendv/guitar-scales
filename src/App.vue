@@ -21,29 +21,44 @@
                 alt=""
                 width="200"
             />
-            <span v-space-after="1">
+            <span>
                 made by
                 <a
                     class="link"
                     target="_blank"
                     href="https://github.com/harmendv"
-                >harmendv</a
+                    >harmendv</a
                 >
-            </span >
+            </span>
+        </lv-flex>
+
+        <lv-flex
+            align-items="start"
+            justify-content="center"
+            direction="column"
+            v-space-after="1"
+        >
+            <lv-heading
+                as="span"
+                inline
+                level="5"
+                >{{ title }}</lv-heading
+            >
         </lv-flex>
 
         <vue-fretboard
             :strings="JSON.parse(tuning)"
-            :highlight="highlight"
+            :scale-notes="scaleNotes"
             :frets="20"
-            :chord-tone-root="chordToneRoot"
+            :chord-root="chordRoot"
+            :chord-notes="chordNotes"
             :show-degrees="noteNames === 'degrees'"
             :root="note"
             :show-rest="noteVisibility === 'all'"
             v-space-after="2"
         />
 
-        <lv-fieldset legend="Chords">
+        <lv-fieldset legend="Diatonic Chords">
             <vue-chords
                 :chords="chords"
                 :active="chord"
@@ -162,6 +177,7 @@ import {
     LvFieldset,
     LvThemeToggle,
     LvCard,
+    LvHeading,
     useBreakpoints,
     LvDrawer,
     LvButton,
@@ -177,6 +193,7 @@ import VueFretboard from "./components/VueFretboard.vue";
 import VueChords from "./components/VueChords.vue";
 import { scales, scalesFlatMap } from "./utils/scales.js";
 import { notes, getNoteByOffset } from "./utils/notes.js";
+import { chordsByPrimaryAbbreviation } from './utils/chords.js';
 
 const params = useUrlSearchParams("history");
 
@@ -195,6 +212,7 @@ export default {
         LvFieldset,
         LvFlex,
         LvGrid,
+        LvHeading,
         LvGridColumn,
         LvGridRow,
         LvIcon,
@@ -214,10 +232,10 @@ export default {
             mode: Number.parseInt(params.mode, 10) || 1,
             chord: Number.parseInt(params.chord, 10) || null,
             tuning: params.tuning || JSON.stringify(["E", "A", "D", "G", "B", "E"]),
-            noteNames: params.noteNames || "degrees",
-            noteVisibility: params.noteVisibility || "only-scale",
+            noteNames: params.noteNames || "notes",
+            noteVisibility: params.noteVisibility || "all",
             noteNamesOptions: [
-                { label: "Scale Degrees", value: "degrees" },
+                { label: "Scale and chord Degrees", value: "degrees" },
                 { label: "Scale Notes", value: "notes" },
             ],
             noteVisibilityOptions: [
@@ -288,8 +306,55 @@ export default {
         },
     },
     computed: {
-        chordToneRoot() {
+        title() {
+            let title = `Scale: ${this.note}-${this.scale}`;
+            if(this.mode > 1) {
+                title += ` (${this.modes[this.mode - 1].label})`
+            }
+            if(this.chord) {
+                title += ` / chord: ${this.chordRoot}${this.chordExtension}`
+            }
+            return title;
+        },
+        chordRoot() {
             return this.chords[this.chord - 1]?.note ?? null;
+        },
+        chordExtension() {
+            return this.chords[this.chord - 1]?.chord ?? null;
+        },
+        chordNotes() {
+            if(!this.chord || !this.scaleNotes || !this.chordIntervals) return {};
+
+            const scaleIndex = scalesFlatMap.indexOf(this.scale);
+            const scaleFormula = scales[scaleIndex].formula;
+            const scaleFormulaLength = scaleFormula.length;
+            const chordTones = {};
+
+            const chordToneIndexes = [
+                this.chord - 1,
+                this.chord - 1 + 2,
+                this.chord - 1 + 4,
+                scaleFormulaLength === 6 ? this.chord - 1 + 5 : this.chord - 1 + 6,
+            ];
+
+            chordToneIndexes.forEach((index, iterator) => {
+                if(index >= scaleFormulaLength) {
+                    chordTones[this.scaleNotes[index - scaleFormulaLength].note] = {
+                        ...this.scaleNotes[index - scaleFormulaLength],
+                        interval: this.chordIntervals[iterator]
+                    };
+                } else {
+                    chordTones[this.scaleNotes[index].note] = {
+                        ...this.scaleNotes[index],
+                        interval: this.chordIntervals[iterator]
+                    };
+                }
+            })
+
+            return chordTones;
+        },
+        chordIntervals() {
+            return chordsByPrimaryAbbreviation[this.chordExtension]?.intervals ?? null;
         },
         scales() {
             const options = [];
@@ -313,7 +378,7 @@ export default {
             const formula = scales[this.selectedScaleIndex].formula;
             formula.forEach((entry, index) => {
                 // Get the corresponding note from computed notes();
-                const note = this.highlight[index].note;
+                const note = this.scaleNotes[index].note;
 
                 chords.push({
                     note,
@@ -331,47 +396,24 @@ export default {
             });
             return options;
         },
-        highlight() {
-            const highlight = [];
+        scaleNotes() {
+            const scaleNotes = [];
             const scaleIndex = scalesFlatMap.indexOf(this.scale);
             const scaleFormula = scales[scaleIndex].formula;
             const scaleFormulaLength = scaleFormula.length;
             // Calculate the extra note offset caused by the mode
             const modeOffset = scales[scaleIndex].formula[this.mode - 1].chromatic - 1;
             for (let i = 0; i < scaleFormulaLength; i++) {
-                highlight.push({
-                    note: getNoteByOffset(
-                        `${this.note}`,
-                        scaleFormula[i].chromatic - 1 + (12 - modeOffset)
-                    ),
+                const note = getNoteByOffset(
+                    `${this.note}`,
+                    scaleFormula[i].chromatic - 1 + (12 - modeOffset)
+                );
+                scaleNotes.push({
+                    note: note,
                     degree: scaleFormula[i].degree,
                 });
             }
-            // Now that we have prepared all highlight notes, create a proxy and
-            // add the chord tones
-            if (this.chord !== null) {
-                const highlightProxy = new Proxy(highlight, {
-                    get(target, prop) {
-                        if (!isNaN(prop)) {
-                            prop = parseInt(prop, 10);
-                            if (prop < 0) {
-                                prop += target.length;
-                            } else if (prop >= target.length) {
-                                prop -= target.length;
-                            }
-                        }
-                        return target[prop];
-                    }
-                });
-                // Set root to chordTone
-                highlightProxy[this.chord - 1]['chordTone'] = true;
-                highlightProxy[this.chord - 1 + 2]['chordTone'] = true;
-                highlightProxy[this.chord - 1 + 4]['chordTone'] = true;
-                highlightProxy[this.chord - 1 + 6]['chordTone'] = true;
-            }
-
-
-            return highlight;
+            return scaleNotes;
         },
     },
     methods: {

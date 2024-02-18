@@ -11,19 +11,29 @@
             <div
                 class="vue-string__note"
                 :class="{
-                    'vue-string__note--highlight': chordToneRoot ? !!note.chordTone : !!note.highlight,
-                    'vue-string__note--root': chordToneRoot ? note.name === chordToneRoot : note.name === root,
-                    'vue-string__note--scale': chordToneRoot && !note.chordTone && note.highlight,
+                    'vue-string__note--highlight': note.highlight,
+                    'vue-string__note--root': note.root,
                     'vue-string__note--hidden': !note.highlight && (showRest !== true),
                 }"
             >
                 <div class="vue-string__note-content">
-                    <template v-if="showDegrees && note.degree">
-                        {{ note.degree }}
+                    <template v-if="chordRoot ">
+                        <template v-if="showDegrees && chordNotes[note.name]?.interval">
+                            {{ chordNotes[note.name].interval }}
+                        </template>
+                        <template v-else>
+                            {{ note.name }}
+                        </template>
                     </template>
                     <template v-else>
-                        {{ note.name }}
+                        <template v-if="showDegrees && note.degree">
+                            {{ note.degree }}
+                        </template>
+                        <template v-else>
+                            {{ note.name }}
+                        </template>
                     </template>
+
                 </div>
             </div>
         </div>
@@ -63,9 +73,13 @@ export default {
             type: String,
             required: true,
         },
-        chordToneRoot: {
+        chordRoot: {
             type: [String, Number],
             default: null,
+        },
+        chordNotes: {
+            type: Object,
+            default: () => ({}),
         }
     },
     computed: {
@@ -79,14 +93,11 @@ export default {
                 const note = getNoteByOffset(this.start, i);
                 // Get the index of the note (to check if root)
                 const highlightNoteIndex = this.highlightNotes.indexOf(note);
-                // Check if the note exists in highlight
-                const chordTone = this.highlight[highlightNoteIndex]?.chordTone;
 
                 const obj = {
                     name: note,
-                    highlight: !!this.highlightNotes.includes(note),
-                    root: highlightNoteIndex === 0,
-                    chordTone: !!chordTone,
+                    highlight: this.chordRoot ? this.chordNotes[note] : this.highlightNotes.includes(note),
+                    root: this.chordRoot ? note === this.chordRoot : note === this.root,
                     degree: highlightNoteIndex >= 0 ? this.highlight[highlightNoteIndex].degree : false,
                 };
                 notes.push(obj);
@@ -168,7 +179,6 @@ export default {
         justify-content: center;
         border-radius: 100%;
         color: var(--text-color);
-        transition: .2s all;
         border: 2px solid transparent;
 
         &-content {
