@@ -3,7 +3,7 @@
         <lv-flex fill :wrap="false" >
             <lv-card class="vue-chords__chord" :padding="false" inline v-for="(chord, index) in chords" :class="{'vue-chords__chord--active': active === index + 1}" @click="onClickChord(index)">
                 <div class="vue-chords__chord-degree">{{ chord.degree }}</div>
-                <div class="vue-chords__chord-name">{{ chord.note }} <sup>{{ chord.chord }}</sup></div>
+                <div class="vue-chords__chord-name">{{ chord.note }}<sup>{{ chord.chord }}</sup></div>
             </lv-card>
         </lv-flex>
     </div>
@@ -56,7 +56,7 @@ export default {
         }
         &-name {
             padding: .5rem .25rem;
-
+            white-space: nowrap;
         }
         &--active {
             border: 1px solid var(--color-primary);

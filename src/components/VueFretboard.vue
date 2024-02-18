@@ -6,8 +6,9 @@
                 :frets="frets"
                 :start="start"
                 :key="index"
-                :highlight="highlight"
-                :chord-tone-root="chordToneRoot"
+                :highlight="scaleNotes"
+                :chord-root="chordRoot"
+                :chord-notes="chordNotes"
                 :root="root"
                 :show-degrees="showDegrees"
                 :show-rest="showRest"
@@ -43,7 +44,7 @@ export default {
             type: Number,
             default: 19,
         },
-        highlight: {
+        scaleNotes: {
             type: Array,
             default: () => [],
         },
@@ -60,9 +61,13 @@ export default {
             type: String,
             required: true,
         },
-        chordToneRoot: {
+        chordRoot: {
             type: [String, Number],
             default: null,
+        },
+        chordNotes: {
+            type: Object,
+            default: () => ({}),
         }
     },
     computed: {

@@ -1,4 +1,4 @@
-/* Array of all the notes */
+/* Array of all the chords */
 const chords = [
     
     /** Major */
@@ -17,8 +17,8 @@ const chords = [
     {
         id: 3,
         name: 'Major 6th sharp fifth',
-        abbreviations: ['6#5'],
-        intervals: ['1','3','#5','6']
+        abbreviations: ['6♯5'],
+        intervals: ['1','3','♯5','6']
     },
     {
         id: 4,
@@ -29,14 +29,14 @@ const chords = [
     {
         id: 5,
         name: 'Major 7th Sharp Fifth',
-        abbreviations: ['maj7#5'],
-        intervals: ['1','3','#5','7']
+        abbreviations: ['maj7♯5'],
+        intervals: ['1','3','♯5','7']
     },
     {
         id: 5,
         name: 'Major 7th Sharp Fifth',
-        abbreviations: ['maj7#5'],
-        intervals: ['1','3','#5','7']
+        abbreviations: ['maj7♯5'],
+        intervals: ['1','3','♯5','7']
     },
     {
         id: 6,
@@ -55,107 +55,107 @@ const chords = [
         id: 8,
         name: 'Dominant 7th',
         abbreviations: ['7', 'dom7'],
-        intervals: ['1','3','5','b7']
+        intervals: ['1','3','5','♭7']
     },
     {
         id: 9,
         name: 'Dominant 7th flat fifth',
-        abbreviations: ['7b5'],
-        intervals: ['1','3','b5','b7']
+        abbreviations: ['7♭5'],
+        intervals: ['1','3','♭5','♭7']
     },
     {
         id: 10,
         name: 'Dominant 7th sharp fifth',
-        abbreviations: ['7#5'],
-        intervals: ['1','3','#5','b7']
+        abbreviations: ['7♯5'],
+        intervals: ['1','3','♯5','♭7']
     },
     {
         id: 11,
         name: 'Dominant 9th',
         abbreviations: ['9', 'dom9'],
-        intervals: ['1','3','5','b7', '9']
+        intervals: ['1','3','5','♭7', '9']
     },
     {
         id: 12,
         name: 'Dominant 11th',
         abbreviations: ['11', 'dom11'],
-        intervals: ['1','3','5','b7', '9', '11']
+        intervals: ['1','3','5','♭7', '9', '11']
     },
     /** Minor */
     {
         id: 13,
         name: 'Minor',
         abbreviations: ['m', 'min', '-'],
-        intervals: ['1','b3','5']
+        intervals: ['1','♭3','5']
     },
     {
         id: 14,
         name: 'Minor 6th',
         abbreviations: ['m6', 'min6'],
-        intervals: ['1','b3','5', '6']
+        intervals: ['1','♭3','5', '6']
     },
     {
         id: 15,
         name: 'Minor 7th',
         abbreviations: ['m7', 'min7'],
-        intervals: ['1','b3','5', 'b7']
+        intervals: ['1','♭3','5', '♭7']
     },
    
     {
         id: 16,
         name: 'Minor 9th',
         abbreviations: ['m9', 'min9'],
-        intervals: ['1','b3','5', 'b7', '9']
+        intervals: ['1','♭3','5', '♭7', '9']
     },
     {
         id: 17,
         name: 'Minor 11th',
         abbreviations: ['m11', 'min11'],
-        intervals: ['1','b3','5', 'b7', '9', '11']
+        intervals: ['1','♭3','5', '♭7', '9', '11']
     },
     {
         id: 18,
         name: 'Minor 13th',
         abbreviations: ['m13', 'min13'],
-        intervals: ['1','b3','5', 'b7', '9', '13']
+        intervals: ['1','♭3','5', '♭7', '9', '13']
     },
     {
         id: 19,
         name: 'Minor Major 7th',
         abbreviations: ['mMaj7'],
-        intervals: ['1','b3','5', '7']
+        intervals: ['1','♭3','5', '7']
     },
     /** Diminished **/
     {
         id: 20,
         name: 'Diminished',
         abbreviations: ['dim', '°'],
-        intervals: ['1','b3','b5']
+        intervals: ['1','♭3','♭5']
     },
     {
         id: 21,
         name: 'Diminished 7th',
         abbreviations: ['dim7', '°7'],
-        intervals: ['1','b3','b5', 'bb7']
+        intervals: ['1','♭3','♭5', '♭♭7']
     },
     {
         id: 22,
         name: 'Half Diminished',
-        abbreviations: ['m7b5', 'ø'],
-        intervals: ['1','b3','b5', 'b7']
+        abbreviations: ['m7♭5', 'ø'],
+        intervals: ['1','♭3','♭5', '♭7']
     },
     /** Augmented **/
     {
         id: 23,
         name: 'Augmented',
         abbreviations: ['aug', '+'],
-        intervals: ['1','3','#5']
+        intervals: ['1','3','♯5']
     },
     {
         id: 24,
         name: 'Augmented 7th',
-        abbreviations: ['aug7', '+7', '7+', '7#5'],
-        intervals: ['1','3','#5','b7']
+        abbreviations: ['aug7', '+7', '7+', '7♯5'],
+        intervals: ['1','3','♯5','♭7']
     },
     /** Sus & Add **/
     {
