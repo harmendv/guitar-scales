@@ -1,50 +1,203 @@
-<template>
-    <div class="view">
-        <div
-            class="fixed"
-            v-if="breakpoints.greaterOrEqual.lg"
-        >
-            <lv-theme-toggle
-                class="theme-toggle"
-                v-model="theme"
-            ></lv-theme-toggle>
-        </div>
+<script setup lang="ts">
+import { ref, computed, watch, onMounted } from 'vue';
+import { useUrlSearchParams } from '@vueuse/core';
+import VueFretboard from './components/VueFretboard.vue';
+import VueChords from './components/VueChords.vue';
+import { scales, scalesFlatMap } from './utils/scales.js';
+import { notes as baseNotes, getNoteByOffset } from './utils/notes.js';
+import { chordsByPrimaryAbbreviation } from './utils/chords.js';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 
-        <lv-flex
-            align-items="center"
-            justify-content="center"
-            direction="column"
-            v-space-after="2"
-        >
-            <img
-                src="/logo.svg"
-                alt=""
-                width="200"
-            />
+
+// URL search params (reactive)
+const params = useUrlSearchParams('history');
+
+// Helper
+function preferredColorScheme() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    }
+    return 'light';
+}
+
+// State refs
+const theme = ref<string>((localStorage.getItem('theme') as string) || preferredColorScheme());
+const note = ref<string>((params.note as string) || 'C');
+const scale = ref<string>((params.scale as string) || 'major');
+const mode = ref<number>(Number.parseInt(params.mode as string, 10) || 1);
+const chord = ref<number | null>(params.chord ? Number.parseInt(params.chord as string, 10) : null);
+const tuning = ref<string>((params.tuning as string) || JSON.stringify(['E', 'A', 'D', 'G', 'B', 'E']));
+const noteNames = ref<string>((params.noteNames as string) || 'notes');
+const noteVisibility = ref<string>((params.noteVisibility as string) || 'all');
+
+const noteNamesOptions = [
+    { label: 'Scale and chord Degrees', value: 'degrees' },
+    { label: 'Scale Notes', value: 'notes' }
+];
+const noteVisibilityOptions = [
+    { label: 'All Notes', value: 'all' },
+    { label: 'Only Scale Notes', value: 'only-scale' }
+];
+const tuningOptions = [
+    { label: 'Default', value: JSON.stringify(['E', 'A', 'D', 'G', 'B', 'E']) },
+    { label: 'Drop-C', value: JSON.stringify(['C', 'G', 'C', 'F', 'A', 'D']) },
+    { label: 'Drop-D', value: JSON.stringify(['D', 'A', 'D', 'G', 'B', 'E']) },
+    { label: 'Open C', value: JSON.stringify(['C', 'G', 'C', 'G', 'C', 'E']) },
+    { label: 'Open D', value: JSON.stringify(['D', 'A', 'D', 'F♯', 'A', 'D']) },
+    { label: 'Open E', value: JSON.stringify(['E', 'B', 'E', 'G♯', 'B', 'E']) },
+    { label: 'Open G', value: JSON.stringify(['D', 'G', 'D', 'G', 'B', 'D']) },
+    { label: 'DAD-GAD', value: JSON.stringify(['D', 'A', 'D', 'G', 'A', 'D']) },
+    { label: 'B standard', value: JSON.stringify(['B', 'E', 'A', 'D', 'F♯', 'B']) },
+    { label: 'Ukelele', value: JSON.stringify(['G', 'C', 'E', 'A']) }
+];
+
+// Derived option lists
+const scalesOptions = computed(() =>
+    scales.map(s => ({ label: s.name, value: s.slug }))
+);
+const notesOptions = computed(() =>
+    baseNotes.map(n => ({ label: n.name, value: n.name }))
+);
+
+const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(scale.value));
+
+// Adjusted scaleNotes (assert note string)
+const scaleNotes = computed(() => {
+    const arr: { note: string; degree: string }[] = [];
+    const idx = selectedScaleIndex.value;
+    if (idx < 0) return arr;
+    const scaleFormula = scales[idx].formula;
+    const scaleFormulaLength = scaleFormula.length;
+    const modeOffset = scaleFormula[mode.value - 1].chromatic - 1;
+    for (let i = 0; i < scaleFormulaLength; i++) {
+        const n = getNoteByOffset(`${note.value}`, scaleFormula[i].chromatic - 1 + (12 - modeOffset)) as string;
+        arr.push({ note: n, degree: scaleFormula[i].degree });
+    }
+    return arr;
+});
+
+const chords = computed(() => {
+    const list: { note: string; chord: string; degree: string }[] = [];
+    const idx = selectedScaleIndex.value;
+    if (idx < 0) return list;
+    const formula = scales[idx].formula;
+    formula.forEach((entry, index) => {
+        const n = scaleNotes.value[index]?.note;
+        list.push({ note: n, chord: entry.chord, degree: entry.degree });
+    });
+    return list;
+});
+
+// Refined chordRoot/Extension types (no null => undefined)
+const chordRoot = computed<string | number | undefined>(() => (chord.value ? chords.value[chord.value - 1]?.note : undefined));
+const chordExtension = computed<string | number | undefined>(() => (chord.value ? chords.value[chord.value - 1]?.chord : undefined));
+
+// Safe map cast for intervals
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const chordsMap = chordsByPrimaryAbbreviation as Record<string, { intervals: string[] }>;
+const chordIntervals = computed<string[] | null>(() => (chordExtension.value ? chordsMap[String(chordExtension.value)]?.intervals ?? null : null));
+
+const chordNotes = computed(() => {
+    if (!chord.value || !scaleNotes.value.length || !chordIntervals.value) return {} as Record<string, any>;
+    const idx = selectedScaleIndex.value;
+    if (idx < 0) return {};
+    const scaleFormula = scales[idx].formula;
+    const scaleFormulaLength = scaleFormula.length;
+    const chordTones: Record<string, any> = {};
+    const chordToneIndexes = [
+        chord.value - 1,
+        chord.value - 1 + 2,
+        chord.value - 1 + 4,
+        scaleFormulaLength === 6 ? chord.value - 1 + 5 : chord.value - 1 + 6
+    ];
+    chordToneIndexes.forEach((i, iterator) => {
+        if (i >= scaleFormulaLength) {
+            const refIndex = i - scaleFormulaLength;
+            chordTones[scaleNotes.value[refIndex].note] = {
+                ...scaleNotes.value[refIndex],
+                interval: chordIntervals.value?.[iterator]
+            };
+        } else {
+            chordTones[scaleNotes.value[i].note] = {
+                ...scaleNotes.value[i],
+                interval: chordIntervals.value?.[iterator]
+            };
+        }
+    });
+    return chordTones;
+});
+
+const modes = computed(() => {
+    const opts: { label: string; value: number }[] = [];
+    const idx = selectedScaleIndex.value;
+    if (idx < 0) return opts;
+    const formula = scales[idx].formula;
+    formula.forEach(entry => opts.push({ label: entry.mode, value: entry.id }));
+    return opts;
+});
+
+const title = computed(() => {
+    let t = `Scale: ${note.value}-${scale.value}`;
+    if (mode.value > 1 && modes.value[mode.value - 1]) {
+        t += ` (${modes.value[mode.value - 1].label})`;
+    }
+    if (chord.value) {
+        t += ` / chord: ${chordRoot.value ?? ''}${chordExtension.value ?? ''}`;
+    }
+    return t;
+});
+
+// Active value for chords component (exclude null)
+const activeChord = computed<number | undefined>(() => (chord.value == null ? undefined : chord.value));
+
+// Watchers syncing to URL params
+watch(note, v => (params.note = v));
+watch(scale, v => { mode.value = 1; params.scale = v; });
+watch(mode, v => { chord.value = null; params.mode = v as any; });
+watch(chord, v => (params.chord = v as any));
+watch(tuning, v => (params.tuning = v));
+watch(noteNames, v => (params.noteNames = v));
+watch(noteVisibility, v => (params.noteVisibility = v));
+
+watch(theme, v => {
+    document.body.setAttribute('data-theme', v);
+    localStorage.setItem('theme', v);
+});
+
+onMounted(() => {
+    document.body.setAttribute('data-theme', theme.value);
+});
+
+function onClickChord(index: number) {
+    if (chord.value === index) {
+        chord.value = null;
+    } else {
+        chord.value = index;
+    }
+}
+</script>
+
+<template>
+    <div class="w-full max-w-[1200px] mx-auto flex flex-col">
+        <div class="flex items-center justify-center flex-col mb-4">
+            <img src="/logo.svg" alt="" width="200" />
             <span>
                 made by
-                <a
-                    class="link"
-                    target="_blank"
-                    href="https://github.com/harmendv"
-                    >harmendv</a
-                >
+                <a class="link" target="_blank" href="https://github.com/harmendv">harmendv</a>
             </span>
-        </lv-flex>
+        </div>
 
-        <lv-flex
-            align-items="start"
-            justify-content="center"
-            direction="column"
-            v-space-after="1"
-        >
-            <lv-heading
-                as="span"
-                inline
-                level="5"
-                >{{ title }}</lv-heading
-            >
-        </lv-flex>
+        <div class="flex items-center justify-center flex-col mb-2 text-xl font-bold text-indigo-500">
+            {{ title }}
+        </div>
 
         <vue-fretboard
             :strings="JSON.parse(tuning)"
@@ -55,405 +208,97 @@
             :show-degrees="noteNames === 'degrees'"
             :root="note"
             :show-rest="noteVisibility === 'all'"
-            v-space-after="2"
+            class="mb-4"
         />
 
-        <lv-fieldset legend="Diatonic Chords">
-            <vue-chords
-                :chords="chords"
-                :active="chord"
-                v-space-after="2"
-                @click-chord="onClickChord"
-            ></vue-chords>
-        </lv-fieldset>
+        <vue-chords
+            :chords="chords"
+            :active="activeChord"
+            class="mb-4 w-full"
+            @click-chord="onClickChord"
+        ></vue-chords>
 
-        <div
-            v-space-after="1"
-            class="options"
-        >
-            <lv-grid
-                v-space-after="1"
-                gap="1.5rem"
-            >
-                <lv-grid-row gap="1.5rem">
-                    <lv-grid-column
-                        :width="4"
-                        :md="12"
-                    >
-                        <lv-fieldset legend="Root">
-                            <lv-select
-                                v-model="note"
-                                :options="notes"
-                                :clearable="false"
-                            ></lv-select>
-                        </lv-fieldset>
-                    </lv-grid-column>
-                    <lv-grid-column
-                        :width="4"
-                        :md="12"
-                    >
-                        <lv-fieldset legend="Scale">
-                            <lv-select
-                                v-model="scale"
-                                :options="scales"
-                                :clearable="false"
-                            ></lv-select>
-                        </lv-fieldset>
-                    </lv-grid-column>
-                    <lv-grid-column
-                        :width="4"
-                        :md="12"
-                    >
-                        <lv-fieldset legend="Mode">
-                            <lv-select
-                                v-model="mode"
-                                :options="modes"
-                                :clearable="false"
-                            ></lv-select>
-                        </lv-fieldset>
-                    </lv-grid-column>
-                </lv-grid-row>
-                <lv-grid-row gap="1.5rem">
-                    <lv-grid-column
-                        :width="4"
-                        :md="12"
-                    >
-                        <lv-fieldset legend="Note Names">
-                            <lv-select
-                                v-model="noteNames"
-                                :options="noteNamesOptions"
-                                :clearable="false"
-                            ></lv-select>
-                        </lv-fieldset>
-                    </lv-grid-column>
-                    <lv-grid-column
-                        :width="4"
-                        :md="12"
-                    >
-                        <lv-fieldset legend="Notes visibility">
-                            <lv-select
-                                v-model="noteVisibility"
-                                :options="noteVisibilityOptions"
-                                :clearable="false"
-                            ></lv-select>
-                        </lv-fieldset>
-                    </lv-grid-column>
-                    <lv-grid-column
-                        :width="4"
-                        :md="12"
-                    >
-                        <lv-fieldset legend="Tuning">
-                            <lv-select
-                                v-model="tuning"
-                                :options="tuningOptions"
-                                :clearable="false"
-                            ></lv-select>
-                        </lv-fieldset>
-                    </lv-grid-column>
-                </lv-grid-row>
-            </lv-grid>
+        <div class="mb-2 grid grid-cols-3 gap-4">
+            <div>
+                Root
+                <Select v-model="note">
+                    <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Make a selection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in notesOptions" :value="option.value" :key="option.value">
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                Scale
+                <Select v-model="scale">
+                    <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Make a selection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in scalesOptions" :value="option.value" :key="option.value">
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                Mode
+                <Select v-model="mode">
+                    <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Make a selection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in modes" :value="option.value" :key="option.value">
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                Note names
+                <Select v-model="noteNames">
+                    <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Make a selection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in noteNamesOptions" :value="option.value" :key="option.value">
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                Notes visibility
+                <Select v-model="noteVisibility">
+                    <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Make a selection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in noteVisibilityOptions" :value="option.value" :key="option.value">
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div>
+                Tuning
+                <Select v-model="tuning">
+                    <SelectTrigger class="w-full">
+                        <SelectValue placeholder="Make a selection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in tuningOptions" :value="option.value" :key="option.value">
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
         </div>
 
-        <lv-flex
-            align-items="center"
-            justify-content="center"
-            direction="row"
-            v-if="!breakpoints.greaterOrEqual.lg"
-        >
-            <lv-theme-toggle
-                class="theme-toggle"
-                v-model="theme"
-            ></lv-theme-toggle>
-            toggle dark/light
-        </lv-flex>
     </div>
 </template>
-
-<script>
-import {
-    LvSelect,
-    LvFlex,
-    LvCheckbox,
-    LvFieldset,
-    LvThemeToggle,
-    LvCard,
-    LvHeading,
-    useBreakpoints,
-    LvDrawer,
-    LvButton,
-    LvIcon,
-    LvGrid,
-    LvGridRow,
-    LvGridColumn,
-    LvSlider,
-    LvSpinner,
-} from "@libvue/core";
-import { useUrlSearchParams } from "@vueuse/core";
-import VueFretboard from "./components/VueFretboard.vue";
-import VueChords from "./components/VueChords.vue";
-import { scales, scalesFlatMap } from "./utils/scales.js";
-import { notes, getNoteByOffset } from "./utils/notes.js";
-import { chordsByPrimaryAbbreviation } from './utils/chords.js';
-
-const params = useUrlSearchParams("history");
-
-export default {
-    setup() {
-        const { breakpoints } = useBreakpoints();
-        return {
-            breakpoints,
-        };
-    },
-    components: {
-        LvButton,
-        LvCard,
-        LvCheckbox,
-        LvDrawer,
-        LvFieldset,
-        LvFlex,
-        LvGrid,
-        LvHeading,
-        LvGridColumn,
-        LvGridRow,
-        LvIcon,
-        LvSelect,
-        LvSlider,
-        LvSpinner,
-        LvThemeToggle,
-        VueChords,
-        VueFretboard,
-    },
-    data() {
-        return {
-            showFilters: false,
-            theme: this.preferredColorScheme(),
-            note: params.note || "C",
-            scale: params.scale || "major",
-            mode: Number.parseInt(params.mode, 10) || 1,
-            chord: Number.parseInt(params.chord, 10) || null,
-            tuning: params.tuning || JSON.stringify(["E", "A", "D", "G", "B", "E"]),
-            noteNames: params.noteNames || "notes",
-            noteVisibility: params.noteVisibility || "all",
-            noteNamesOptions: [
-                { label: "Scale and chord Degrees", value: "degrees" },
-                { label: "Scale Notes", value: "notes" },
-            ],
-            noteVisibilityOptions: [
-                { label: "All Notes", value: "all" },
-                { label: "Only Scale Notes", value: "only-scale" },
-            ],
-            tuningOptions: [
-                { label: "Default", value: JSON.stringify(["E", "A", "D", "G", "B", "E"]) },
-                { label: "Drop-C", value: JSON.stringify(["C", "G", "C", "F", "A", "D"]) },
-                { label: "Drop-D", value: JSON.stringify(["D", "A", "D", "G", "B", "E"]) },
-                { label: "Open C", value: JSON.stringify(["C", "G", "C", "G", "C", "E"]) },
-                { label: "Open D", value: JSON.stringify(["D", "A", "D", "F♯", "A", "D"]) },
-                { label: "Open E", value: JSON.stringify(["E", "B", "E", "G♯", "B", "E"]) },
-                { label: "Open G", value: JSON.stringify(["D", "G", "D", "G", "B", "D"]) },
-                { label: "DAD-GAD", value: JSON.stringify(["D", "A", "D", "G", "A", "D"]) },
-                { label: "B standard", value: JSON.stringify(["B", "E", "A", "D", "F♯", "B"]) },
-                { label: "Ukelele", value: JSON.stringify(["G", "C", "E", "A"]) },
-            ],
-        };
-    },
-    mounted() {
-        if (localStorage.getItem("theme")) {
-            this.theme = localStorage.getItem("theme");
-            document.body.setAttribute("data-theme", this.theme);
-        }
-    },
-    watch: {
-        theme(val) {
-            document.body.setAttribute("data-theme", val);
-            localStorage.setItem("theme", val);
-        },
-        note: {
-            handler(value) {
-                params.note = value;
-            },
-        },
-        tuning: {
-            handler(value) {
-                params.tuning = value;
-            },
-        },
-        noteNames: {
-            handler(value) {
-                params.noteNames = value;
-            },
-        },
-        noteVisibility: {
-            handler(value) {
-                params.noteVisibility = value;
-            },
-        },
-        scale: {
-            handler(value) {
-                this.mode = 1;
-                params.scale = value;
-            },
-        },
-        chord: {
-            handler(value) {
-                params.chord = value;
-            },
-        },
-        mode: {
-            handler(value) {
-                this.chord = null;
-                params.mode = value;
-            },
-        },
-    },
-    computed: {
-        title() {
-            let title = `Scale: ${this.note}-${this.scale}`;
-            if(this.mode > 1) {
-                title += ` (${this.modes[this.mode - 1].label})`
-            }
-            if(this.chord) {
-                title += ` / chord: ${this.chordRoot}${this.chordExtension}`
-            }
-            return title;
-        },
-        chordRoot() {
-            return this.chords[this.chord - 1]?.note ?? null;
-        },
-        chordExtension() {
-            return this.chords[this.chord - 1]?.chord ?? null;
-        },
-        chordNotes() {
-            if(!this.chord || !this.scaleNotes || !this.chordIntervals) return {};
-
-            const scaleIndex = scalesFlatMap.indexOf(this.scale);
-            const scaleFormula = scales[scaleIndex].formula;
-            const scaleFormulaLength = scaleFormula.length;
-            const chordTones = {};
-
-            const chordToneIndexes = [
-                this.chord - 1,
-                this.chord - 1 + 2,
-                this.chord - 1 + 4,
-                scaleFormulaLength === 6 ? this.chord - 1 + 5 : this.chord - 1 + 6,
-            ];
-
-            chordToneIndexes.forEach((index, iterator) => {
-                if(index >= scaleFormulaLength) {
-                    chordTones[this.scaleNotes[index - scaleFormulaLength].note] = {
-                        ...this.scaleNotes[index - scaleFormulaLength],
-                        interval: this.chordIntervals[iterator]
-                    };
-                } else {
-                    chordTones[this.scaleNotes[index].note] = {
-                        ...this.scaleNotes[index],
-                        interval: this.chordIntervals[iterator]
-                    };
-                }
-            })
-
-            return chordTones;
-        },
-        chordIntervals() {
-            return chordsByPrimaryAbbreviation[this.chordExtension]?.intervals ?? null;
-        },
-        scales() {
-            const options = [];
-            scales.forEach((scale) => {
-                options.push({ label: scale.name, value: scale.slug });
-            });
-            return options;
-        },
-        selectedScaleIndex() {
-            return scalesFlatMap.indexOf(this.scale);
-        },
-        notes() {
-            const options = [];
-            notes.forEach((note) => {
-                options.push({ label: note.name, value: note.name });
-            });
-            return options;
-        },
-        chords() {
-            const chords = [];
-            const formula = scales[this.selectedScaleIndex].formula;
-            formula.forEach((entry, index) => {
-                // Get the corresponding note from computed notes();
-                const note = this.scaleNotes[index].note;
-
-                chords.push({
-                    note,
-                    chord: entry.chord,
-                    degree: entry.degree,
-                });
-            });
-            return chords;
-        },
-        modes() {
-            const options = [];
-            const formula = scales[this.selectedScaleIndex].formula;
-            formula.forEach((entry) => {
-                options.push({ label: entry.mode, value: entry.id });
-            });
-            return options;
-        },
-        scaleNotes() {
-            const scaleNotes = [];
-            const scaleIndex = scalesFlatMap.indexOf(this.scale);
-            const scaleFormula = scales[scaleIndex].formula;
-            const scaleFormulaLength = scaleFormula.length;
-            // Calculate the extra note offset caused by the mode
-            const modeOffset = scales[scaleIndex].formula[this.mode - 1].chromatic - 1;
-            for (let i = 0; i < scaleFormulaLength; i++) {
-                const note = getNoteByOffset(
-                    `${this.note}`,
-                    scaleFormula[i].chromatic - 1 + (12 - modeOffset)
-                );
-                scaleNotes.push({
-                    note: note,
-                    degree: scaleFormula[i].degree,
-                });
-            }
-            return scaleNotes;
-        },
-    },
-    methods: {
-        preferredColorScheme() {
-            if (
-                window.matchMedia &&
-                window.matchMedia("(prefers-color-scheme: dark)").matches
-            ) {
-                return "dark";
-            }
-            return "light";
-        },
-        onClickChord(index) {
-            if(this.chord === index) {
-                this.chord = null;
-            } else {
-                this.chord = index;
-            }
-        }
-    },
-};
-</script>
-
-<style lang="scss">
-.fixed {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 10;
-}
-
-.view {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-}
-
-.link {
-    color: var(--color-primary);
-}
-</style>

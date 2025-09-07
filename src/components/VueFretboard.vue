@@ -1,5 +1,5 @@
 <template>
-    <div class="vue-fretboard">
+    <div class="vue-fretboard shadow">
         <div class="vue-fretboard__strings">
             <vue-string
                 v-for="(start, index) in reversedStrings"
@@ -86,12 +86,11 @@ export default {
     flex-direction: column;
     overflow-x: auto;
     width: 100%;
-    background: var(--background-color);
+    background: var(--color-slate-100);
     background-size: 100%;
     border-radius: 16px;
-    border: 1px solid var(--border-color);
     overflow-y: hidden;
-    box-shadow: var(--shadow);
+
     &__strings {
         flex-grow: 1;
     }
@@ -100,7 +99,7 @@ export default {
         width: 100%;
         display: flex;
         justify-content: space-between;
-        border-top: 1px solid var(--border-color);
+        border-top: 1px solid var(--color-slate-300);
     }
 }
 </style>

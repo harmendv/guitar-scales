@@ -1,28 +1,17 @@
 <template>
-    <div class="vue-chords">
-        <lv-flex fill :wrap="false" >
-            <lv-card class="vue-chords__chord" :padding="false" inline v-for="(chord, index) in chords" :class="{'vue-chords__chord--active': active === index + 1}" @click="onClickChord(index)">
-                <div class="vue-chords__chord-degree">{{ chord.degree }}</div>
-                <div class="vue-chords__chord-name">{{ chord.note }}<sup>{{ chord.chord }}</sup></div>
-            </lv-card>
-        </lv-flex>
+    <div>
+        <div class="flex w-full gap-4">
+            <div class="border p-2 cursor-pointer grow rounded" v-for="(chord, index) in chords" :class="{'border-indigo-700 bg-indigo-100': active === index + 1}" @click="onClickChord(index)">
+                <div class="bg-gray-100 mb-2 rounded" :class="{ 'bg-indigo-500 text-white': active === index + 1 }">{{ chord.degree }}</div>
+                <div class="font-bold">{{ chord.note }}<sup>{{ chord.chord }}</sup></div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script>
-import { LvFlex, LvCard, useBreakpoints  } from '@libvue/core';
 export default {
-    setup() {
-        const { breakpoints } = useBreakpoints();
-        return {
-            breakpoints,
-        };
-    },
-    components: {
-        LvFlex,
-        LvCard,
-        useBreakpoints
-    },
+
     props: {
         chords: {
             type: Array,
@@ -41,29 +30,3 @@ export default {
     }
 };
 </script>
-
-<style lang="scss">
-.vue-chords {
-    overflow-x: auto;
-    &__chord {
-        $chord: &;
-        cursor: pointer;
-
-        &-degree {
-            padding: .25rem;
-            background-color: var(--border-color-light);
-            border-radius: var(--border-radius) var(--border-radius) 0 0;
-        }
-        &-name {
-            padding: .5rem .25rem;
-            white-space: nowrap;
-        }
-        &--active {
-            border: 1px solid var(--color-primary);
-            #{$chord}-degree {
-                background-color: var(--color-primary-dimmed);
-            }
-        }
-    }
-}
-</style>

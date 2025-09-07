@@ -35,13 +35,13 @@ export default {
     display: flex;
     justify-content: center;
     border-right: 2px solid transparent;
-    background: var(--border-color-light);
-    color: var(--text-color);
+    background: var(--color-slate-200);
+    color: var(--color-slate-700);
     flex-grow: 1;
 
     &--highlight {
         #{$self}__content {
-            background: var(--border-color);
+            background: var(--color-slate-300);
         }
     }
 
@@ -55,7 +55,6 @@ export default {
 
     &__content {
         position: relative;
-        background: var(--border-color-light);
         z-index: 1;
         padding: 0;
         width: clamp(24px, 3cqw, 32px);
