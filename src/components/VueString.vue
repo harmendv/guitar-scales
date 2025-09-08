@@ -83,7 +83,7 @@ export default {
             <div class="absolute left-0 top-1/2 w-full h-0.5 bg-slate-300 dark:bg-slate-900 z-10"></div>
             <div
                 :class="cn([
-                    'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 md:w-10 h-8 md:h-10 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-900 dark:text-white border-2 border-transparent flex-shrink-0',
+                    'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 h-8 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-900 dark:text-white border-2 border-transparent flex-shrink-0',
                     index === 0 ? '' : '',
                     note.highlight ? 'bg-indigo-500 dark:bg-indigo-600 text-white' : '',
                     note.root ? 'bg-red-500 dark:bg-red-500 text-white' : '',
