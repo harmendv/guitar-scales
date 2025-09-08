@@ -1,10 +1,14 @@
 <template>
     <div
-        class="vue-fret-number"
-        :class="{ 'vue-fret-number--highlight': !!highlight }"
+        class="relative text-center p-2 flex justify-center border-r-2 border-transparent bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex-grow first:border-r-4 first:border-transparent last:border-r-0"
         :style="`--divider: ${frets};`"
     >
-        <div class="vue-fret-number__content">
+        <div
+            :class="[
+                'relative z-10 p-0 w-8 md:w-10 h-8 md:h-10 flex font-mono text-base md:text-md items-center justify-center rounded',
+                highlight ? 'bg-slate-300 dark:bg-slate-900' : ''
+            ]"
+        >
             <slot />
         </div>
     </div>
@@ -24,48 +28,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss">
-.vue-fret-number {
-    $self: &;
-    position: relative;
-    //width: calc(100% / var(--divider));
-    text-align: center;
-    padding: clamp(10px, 1cqw, 14px);
-    display: flex;
-    justify-content: center;
-    border-right: 2px solid transparent;
-    background: var(--border-color-light);
-    color: var(--text-color);
-    flex-grow: 1;
-
-    &--highlight {
-        #{$self}__content {
-            background: var(--border-color);
-        }
-    }
-
-    &:first-of-type {
-        border-right: 4px solid transparent;
-    }
-
-    &:last-of-type {
-        border-right: 0;
-    }
-
-    &__content {
-        position: relative;
-        background: var(--border-color-light);
-        z-index: 1;
-        padding: 0;
-        width: clamp(24px, 3cqw, 32px);
-        height: clamp(24px, 3cqw, 32px);
-        display: flex;
-        font-family: monospace;
-        font-size: clamp(14px, 1.8cqw, 18px);
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-    }
-}
-</style>
