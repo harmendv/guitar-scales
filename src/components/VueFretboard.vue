@@ -4,7 +4,8 @@
             <vue-string
                 v-for="(start, index) in reversedStrings"
                 :frets="frets"
-                :start="start"
+                :start="start.note"
+                :start-octave="start.octave"
                 :key="index"
                 :highlight="scaleNotes"
                 :chord-root="chordRoot"
@@ -38,7 +39,14 @@ export default {
     props: {
         strings: {
             type: Array,
-            default: () => ["E", "A", "D", "G", "B", "E"],
+            default: () => [
+                { note: "E", octave: 2 },
+                { note: "A", octave: 2 },
+                { note: "D", octave: 3 },
+                { note: "G", octave: 3 },
+                { note: "B", octave: 3 },
+                { note: "E", octave: 4 },
+            ],
         },
         frets: {
             type: Number,
