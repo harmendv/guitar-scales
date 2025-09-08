@@ -8,6 +8,10 @@ export default {
             type: String,
             required: true,
         },
+        startOctave: {
+            type: Number,
+            required: true,
+        },
         frets: {
             type: Number,
             default: 19,
@@ -52,14 +56,21 @@ export default {
         },
         notes() {
             const notes = [];
+            let ccounter = 0;
             for (let i = 0; i < this.frets; i++) {
                 // Get the note by offset
                 const note = getNoteByOffset(this.start, i);
                 // Get the index of the note (to check if root)
                 const highlightNoteIndex = this.highlightNotes.indexOf(note);
+                // Get the octave
+                if(note === 'C' && i !== 0){
+                    ccounter += 1;
+                }
+                const octave = this.startOctave + ccounter;
 
                 const obj = {
                     name: note,
+                    octave: octave,
                     highlight: this.chordRoot ? this.chordNotes[note] : this.highlightNotes.includes(note),
                     root: this.chordRoot ? note === this.chordRoot : note === this.root,
                     degree: highlightNoteIndex >= 0 ? this.highlight[highlightNoteIndex].degree : false,
