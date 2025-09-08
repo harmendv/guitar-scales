@@ -77,19 +77,18 @@ export default {
         <div
             v-for="(note, index) in notes"
             :key="index"
-            class="flex-grow text-center p-2 flex justify-center border-r-2 border-slate-500 relative first:border-r-4 first:bg-slate-200 dark:first:bg-slate-700 last:border-r-0"
+            class="flex-grow text-center p-2 flex justify-center border-r-2 border-slate-300 dark:border-slate-900 relative first:border-r-4 first:bg-slate-200 dark:first:bg-slate-700 last:border-r-0"
         >
             <!-- Horizontal line (was ::before) -->
-            <div class="absolute left-0 top-1/2 w-full h-0.5 bg-slate-500 z-10"></div>
+            <div class="absolute left-0 top-1/2 w-full h-0.5 bg-slate-300 dark:bg-slate-900 z-10"></div>
             <div
                 :class="cn([
-                    'relative bg-slate-50 dark:bg-slate-800 z-10 w-8 md:w-10 h-8 md:h-10 flex font-mono text-base md:text-lg font-bold items-center justify-center rounded-full text-slate-900 dark:text-white border-2 border-transparent flex-shrink-0',
+                    'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 md:w-10 h-8 md:h-10 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-900 dark:text-white border-2 border-transparent flex-shrink-0',
                     index === 0 ? '' : '',
-                    note.highlight ? 'bg-indigo-500 dark:bg-indigo-500 text-white' : '',
+                    note.highlight ? 'bg-indigo-500 dark:bg-indigo-600 text-white' : '',
                     note.root ? 'bg-red-500 dark:bg-red-500 text-white' : '',
                     !note.highlight && (showRest !== true) ? 'opacity-0' : '',
                     note.degree === 'scale' ? 'bg-slate-400' : '',
-                    note.chordTone ? 'outline-dashed outline-yellow-400 outline-2' : ''
                 ])"
             >
                 <div class="absolute w-full h-full flex items-center justify-center top-0">

@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col overflow-x-auto w-full bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-y-hidden shadow">
+    <div class="flex flex-col overflow-x-auto w-full bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-y-hidden border">
         <div class="flex-grow">
             <vue-string
                 v-for="(start, index) in reversedStrings"
@@ -14,7 +14,7 @@
                 :show-rest="showRest"
             />
         </div>
-        <div class="relative w-full flex justify-between border-t border-slate-300">
+        <div class="relative w-full flex justify-between border-t border-slate-300 dark:border-slate-900">
             <vue-fret-number
                 v-for="(fret, index) in frets"
                 :key="`fret${index}`"

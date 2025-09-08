@@ -1,10 +1,8 @@
 <template>
-    <div>
-        <div class="flex w-full gap-4">
-            <div class="border p-2 cursor-pointer grow rounded" v-for="(chord, index) in chords" :class="{'border-indigo-700 bg-indigo-100 dark:bg-indigo-900': active === index + 1}" @click="onClickChord(index)">
-                <div class="bg-slate-100 dark:bg-slate-800 mb-2 rounded" :class="{ '!bg-indigo-500 !dark:bg-indigo-500 text-white': active === index + 1 }">{{ chord.degree }}</div>
-                <div class="font-bold">{{ chord.note }}<sup>{{ chord.chord }}</sup></div>
-            </div>
+    <div class="flex flex-wrap w-full gap-6">
+        <div class="border p-2 cursor-pointer grow rounded rounded-md" v-for="(chord, index) in chords" :class="{'border-indigo-700 bg-indigo-100 dark:bg-indigo-900': active === index + 1}" @click="onClickChord(index)">
+            <div class="bg-slate-100 dark:bg-slate-800 mb-2 rounded" :class="{ '!bg-indigo-500 !dark:bg-indigo-500 text-white': active === index + 1 }">{{ chord.degree }}</div>
+            <div class="font-bold">{{ chord.note }}<sup>{{ chord.chord }}</sup></div>
         </div>
     </div>
 </template>

@@ -5,7 +5,7 @@
     >
         <div
             :class="[
-                'relative z-10 p-0 w-8 md:w-10 h-8 md:h-10 flex font-mono text-base md:text-lg items-center justify-center rounded',
+                'relative z-10 p-0 w-8 md:w-10 h-8 md:h-10 flex font-mono text-base md:text-md items-center justify-center rounded',
                 highlight ? 'bg-slate-300 dark:bg-slate-900' : ''
             ]"
         >
