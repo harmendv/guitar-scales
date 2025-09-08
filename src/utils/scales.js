@@ -72,7 +72,7 @@ const scales = [
                 chromatic: 3,
                 id: 2,
                 degree: "2",
-                mode: "Dorian ♭2 / Prhygian ♮6",
+                mode: "Dorian ♭2 / Phrygian ♮6",
                 chord: "m7",
             },
             {

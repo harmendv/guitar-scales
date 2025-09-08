@@ -33,12 +33,6 @@ const chords = [
         intervals: ['1','3','♯5','7']
     },
     {
-        id: 5,
-        name: 'Major 7th Sharp Fifth',
-        abbreviations: ['maj7♯5'],
-        intervals: ['1','3','♯5','7']
-    },
-    {
         id: 6,
         name: 'Major 9th',
         abbreviations: ['maj9', 'M9'],
