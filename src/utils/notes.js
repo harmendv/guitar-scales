@@ -44,4 +44,39 @@ function getNoteByOffset(start = "C", offset = 0) {
     }
 }
 
-export { notes, notesFlatMap, getNoteByOffset };
+/**
+ * Play a tone for a given note and octave using Web Audio API
+ * Smoothly ramps down gain to avoid clipping.
+ */
+function playTone(note, octave) {
+    const noteOffsets = {
+        'C': 0, 'C#': 1, 'Db': 1, 'C♯': 1,
+        'D': 2, 'D#': 3, 'Eb': 3, 'D♯': 3,
+        'E': 4,
+        'F': 5, 'F#': 6, 'Gb': 6, 'F♯': 6,
+        'G': 7, 'G#': 8, 'Ab': 8, 'G♯': 8,
+        'A': 9, 'A#': 10, 'Bb': 10, 'A♯': 10,
+        'B': 11
+    };
+    let nName = note.replace('♯', '#').replace('♭', 'b');
+    const semitone = noteOffsets[nName] ?? noteOffsets[note];
+    if (semitone === undefined) return;
+    const midi = (octave + 1) * 12 + semitone;
+    const freq = 440 * Math.pow(2, (midi - 69) / 12);
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.15;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    // Ramp down gain smoothly to avoid clipping
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.28);
+    osc.stop(ctx.currentTime + 0.3);
+    osc.onended = () => ctx.close();
+}
+
+export { notes, notesFlatMap, getNoteByOffset, playTone };

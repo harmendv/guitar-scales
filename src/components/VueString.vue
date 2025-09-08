@@ -1,5 +1,5 @@
 <script>
-import { getNoteByOffset } from "../utils/notes";
+import { getNoteByOffset, playTone } from "../utils/notes";
 import { cn } from "@/lib/utils";
 
 export default {
@@ -48,6 +48,7 @@ export default {
     data() {
         return {
             cn,
+            playTone,
         }
     },
     computed: {
@@ -94,13 +95,14 @@ export default {
             <div class="absolute left-0 top-1/2 w-full h-0.5 bg-slate-300 dark:bg-slate-900 z-10"></div>
             <div
                 :class="cn([
-                    'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 h-8 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-900 dark:text-white border-2 border-transparent flex-shrink-0',
+                    'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 h-8 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-900 dark:text-white border-2 border-transparent flex-shrink-0 transition cursor-pointer hover:scale-110',
                     index === 0 ? '' : '',
                     note.highlight ? 'bg-indigo-500 dark:bg-indigo-600 text-white' : '',
                     note.root ? 'bg-red-500 dark:bg-red-500 text-white' : '',
                     !note.highlight && (showRest !== true) ? 'opacity-0' : '',
                     note.degree === 'scale' ? 'bg-slate-400' : '',
                 ])"
+                @click="playTone(note.name, note.octave)"
             >
                 <div class="absolute w-full h-full flex items-center justify-center top-0">
                     <template v-if="chordRoot">
