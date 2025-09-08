@@ -242,7 +242,7 @@ function onClickChord(index: number) {
                         <SelectValue placeholder="Make a selection" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem v-for="option in modes" :value="option.value" :key="option.value">
+                        <SelectItem v-for="option in modes" :value="option.value" :key="option.label">
                             {{ option.label }}
                         </SelectItem>
                     </SelectContent>
