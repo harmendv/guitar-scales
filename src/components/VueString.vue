@@ -1,47 +1,6 @@
-<template>
-    <div class="vue-string" :style="`--divider: ${frets};`">
-        <div
-            class="vue-string__cell"
-            :class="{
-                'vue-string__cell--first': index === 0,
-            }"
-            v-for="(note, index) in notes"
-            :key="index"
-        >
-            <div
-                class="vue-string__note"
-                :class="{
-                    'vue-string__note--highlight': note.highlight,
-                    'vue-string__note--root': note.root,
-                    'vue-string__note--hidden': !note.highlight && (showRest !== true),
-                }"
-            >
-                <div class="vue-string__note-content">
-                    <template v-if="chordRoot ">
-                        <template v-if="showDegrees && chordNotes[note.name]?.interval">
-                            {{ chordNotes[note.name].interval }}
-                        </template>
-                        <template v-else>
-                            {{ note.name }}
-                        </template>
-                    </template>
-                    <template v-else>
-                        <template v-if="showDegrees && note.degree">
-                            {{ note.degree }}
-                        </template>
-                        <template v-else>
-                            {{ note.name }}
-                        </template>
-                    </template>
-
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
-
 <script>
 import { getNoteByOffset } from "../utils/notes";
+import { cn } from "@/lib/utils";
 
 export default {
     props: {
@@ -82,6 +41,11 @@ export default {
             default: () => ({}),
         }
     },
+    data() {
+        return {
+            cn,
+        }
+    },
     computed: {
         highlightNotes() {
             return this.highlight.flatMap((i) => i.note);
@@ -108,88 +72,45 @@ export default {
 };
 </script>
 
-<style lang="scss">
-.vue-string {
-    $self: &;
-
-    position: relative;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-
-    &__cell {
-        position: relative;
-
-        //width: calc(100% / var(--divider));
-        flex-grow: 1;
-        text-align: center;
-        padding: clamp(10px, 1cqw, 14px);
-        display: flex;
-        justify-content: center;
-        border-right: 2px solid var(--color-slate-500); /* was var(--border-color) */
-
-        &:before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 0;
-            height: 2px;
-            width: 100%;
-            background-color: var(--color-slate-500); /* was var(--border-color) */
-            z-index: 1;
-        }
-        &:first-of-type {
-            border-right: 4px solid var(--color-slate-500); /* was var(--border-color) */
-            background-color: var(--color-slate-200); /* was var(--border-color-light) */
-        }
-        &:last-of-type { border-right: 0; }
-
-        &--first {
-            #{$self}__note {
-                background: var(--color-slate-200); /* was var(--border-color-light) */
-                &--highlight { background: var(--color-blue-500); color: var(--color-white); }
-                &--scale { background: var(--color-slate-400); }
-                &--root { background: var(--color-red-500); color: var(--color-white); }
-            }
-        }
-    }
-
-    &__note {
-        position: relative;
-        background: var(--color-slate-50); /* was var(--background-color) */
-        z-index: 1;
-        width: clamp(24px, 3cqw, 32px);
-        height: clamp(24px, 3cqw, 32px);
-        flex-shrink: 0;
-        display: flex;
-        font-family: monospace;
-        font-size: clamp(14px, 1.8cqw, 18px);
-        font-weight: bold;
-        align-items: center;
-        justify-content: center;
-        border-radius: 100%;
-        color: var(--color-slate-900); /* was var(--text-color) */
-        border: 2px solid transparent;
-
-        &-content { position: absolute; width:100%; height:100%; display:flex; align-items:center; justify-content:center; top:0; }
-        &--highlight { background: var(--color-blue-500); color: var(--color-white); }
-        &--scale { background: var(--color-slate-400); }
-        &--root { background: var(--color-red-500); color: var(--color-white); }
-        &--hidden { opacity: 0; }
-        &--chord-tone { outline: 5px dashed var(--color-yellow-400); }
-    }
-
-    &__degree {
-        position: absolute;
-        top: 2px;
-        left: 3px;
-        color: var(--color-white); /* was #fff */
-        display: flex;
-        border-radius: 100%;
-        align-items: center;
-        justify-content: center;
-        font-size: clamp(4px, 1vw, 8px);
-        text-align: center;
-    }
-}
-</style>
+<template>
+    <div class="relative w-full flex justify-between" :style="`--divider: ${frets};`">
+        <div
+            v-for="(note, index) in notes"
+            :key="index"
+            class="flex-grow text-center p-2 flex justify-center border-r-2 border-slate-500 relative first:border-r-4 first:bg-slate-200 dark:first:bg-slate-700 last:border-r-0"
+        >
+            <!-- Horizontal line (was ::before) -->
+            <div class="absolute left-0 top-1/2 w-full h-0.5 bg-slate-500 z-10"></div>
+            <div
+                :class="cn([
+                    'relative bg-slate-50 dark:bg-slate-800 z-10 w-8 md:w-10 h-8 md:h-10 flex font-mono text-base md:text-lg font-bold items-center justify-center rounded-full text-slate-900 dark:text-white border-2 border-transparent flex-shrink-0',
+                    index === 0 ? '' : '',
+                    note.highlight ? 'bg-indigo-500 dark:bg-indigo-500 text-white' : '',
+                    note.root ? 'bg-red-500 dark:bg-red-500 text-white' : '',
+                    !note.highlight && (showRest !== true) ? 'opacity-0' : '',
+                    note.degree === 'scale' ? 'bg-slate-400' : '',
+                    note.chordTone ? 'outline-dashed outline-yellow-400 outline-2' : ''
+                ])"
+            >
+                <div class="absolute w-full h-full flex items-center justify-center top-0">
+                    <template v-if="chordRoot">
+                        <template v-if="showDegrees && chordNotes[note.name]?.interval">
+                            {{ chordNotes[note.name].interval }}
+                        </template>
+                        <template v-else>
+                            {{ note.name }}
+                        </template>
+                    </template>
+                    <template v-else>
+                        <template v-if="showDegrees && note.degree">
+                            {{ note.degree }}
+                        </template>
+                        <template v-else>
+                            {{ note.name }}
+                        </template>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

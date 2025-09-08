@@ -186,7 +186,7 @@ function onClickChord(index: number) {
 </script>
 
 <template>
-    <div class="w-full max-w-[1200px] mx-auto flex flex-col">
+    <div class="w-full max-w-[1300px] mx-auto flex flex-col">
         <div class="flex items-center justify-center flex-col mb-4">
             <img src="/logo.svg" alt="" width="200" />
             <span>

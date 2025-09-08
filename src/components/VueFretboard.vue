@@ -1,6 +1,6 @@
 <template>
-    <div class="vue-fretboard shadow">
-        <div class="vue-fretboard__strings">
+    <div class="flex flex-col overflow-x-auto w-full bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-y-hidden shadow">
+        <div class="flex-grow">
             <vue-string
                 v-for="(start, index) in reversedStrings"
                 :frets="frets"
@@ -14,7 +14,7 @@
                 :show-rest="showRest"
             />
         </div>
-        <div class="vue-fretboard__fret-numbers">
+        <div class="relative w-full flex justify-between border-t border-slate-300">
             <vue-fret-number
                 v-for="(fret, index) in frets"
                 :key="`fret${index}`"
@@ -77,29 +77,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss">
-.vue-fretboard {
-    container-name: fretboard;
-    container-type: inline-size;
-    display: flex;
-    flex-direction: column;
-    overflow-x: auto;
-    width: 100%;
-    background: var(--color-slate-100);
-    background-size: 100%;
-    border-radius: 16px;
-    overflow-y: hidden;
-
-    &__strings {
-        flex-grow: 1;
-    }
-    &__fret-numbers {
-        position: relative;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        border-top: 1px solid var(--color-slate-300);
-    }
-}
-</style>
