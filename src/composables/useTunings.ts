@@ -1,4 +1,10 @@
-const tunings = [
+interface Tuning {
+    label: string;
+    data: { note: string; octave: number }[];
+    value: string;
+}
+
+export const tunings: Tuning[] = [
     {
         label: "Default",
         data: [
@@ -118,5 +124,3 @@ const tunings = [
         value: "ukelele",
     },
 ];
-
-export { tunings }

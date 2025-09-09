@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
-import VueFretboard from "./components/VueFretboard.vue";
-import VueChords from "./components/VueChords.vue";
-import { scales, scalesFlatMap } from "./utils/scales.js";
-import { tunings } from './utils/tunings.js';
-import { notes as baseNotes, getNoteByOffset } from "./utils/notes.js";
-import { chordsByPrimaryAbbreviation } from "./utils/chords.js";
+import { scales, scalesFlatMap } from "@/composables/useScales";
+import { tunings } from "@/composables/useTunings";
+import { notes as baseNotes, getScaleNotes } from "@/composables/useNotes";
+import { chordsByPrimaryAbbreviation, getChordIntervals, getChordNotes, useDiatonicChords } from "@/composables/useChords";
+import { Fretboard } from "@/components/ui/fretboard";
+import { Chords } from "@/components/ui/chords";
+
 import {
     Select,
     SelectContent,
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 
 // URL search params (reactive)
 const params = useUrlSearchParams("history");
+
 
 // Helper
 function preferredColorScheme() {
@@ -41,7 +43,8 @@ const chord = ref<number | null>(
     params.chord ? Number.parseInt(params.chord as string, 10) : null
 );
 // Find initial tuning object by value, fallback to default
-const initialTuning = tunings.find(t => t.value === params.tuning) || tunings[0];
+const initialTuning =
+    tunings.find((t) => t.value === params.tuning) || tunings[0];
 const tuning = ref(initialTuning);
 const noteNames = ref<string>((params.noteNames as string) || "notes");
 const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
@@ -62,91 +65,7 @@ const scalesOptions = computed(() =>
 const notesOptions = computed(() =>
     baseNotes.map((n) => ({ label: n.name, value: n.name }))
 );
-
-const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(scale.value));
-
-// Adjusted scaleNotes (assert note string)
-const scaleNotes = computed(() => {
-    const arr: { note: string; degree: string }[] = [];
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return arr;
-    const scaleFormula = scales[idx].formula;
-    const scaleFormulaLength = scaleFormula.length;
-    const modeOffset = scaleFormula[mode.value - 1].chromatic - 1;
-    for (let i = 0; i < scaleFormulaLength; i++) {
-        const n = getNoteByOffset(
-            `${note.value}`,
-            scaleFormula[i].chromatic - 1 + (12 - modeOffset)
-        ) as string;
-        arr.push({ note: n, degree: scaleFormula[i].degree });
-    }
-    return arr;
-});
-
-const chords = computed(() => {
-    const list: { note: string; chord: string; degree: string }[] = [];
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return list;
-    const formula = scales[idx].formula;
-    formula.forEach((entry, index) => {
-        const n = scaleNotes.value[index]?.note;
-        list.push({ note: n, chord: entry.chord, degree: entry.degree });
-    });
-    return list;
-});
-
-// Refined chordRoot/Extension types (no null => undefined)
-const chordRoot = computed<string | number | undefined>(() =>
-    chord.value ? chords.value[chord.value - 1]?.note : undefined
-);
-const chordExtension = computed<string | number | undefined>(() =>
-    chord.value ? chords.value[chord.value - 1]?.chord : undefined
-);
-
-// Safe map cast for intervals
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const chordsMap = chordsByPrimaryAbbreviation as Record<
-    string,
-    { intervals: string[] }
->;
-const chordIntervals = computed<string[] | null>(() =>
-    chordExtension.value
-        ? (chordsMap[String(chordExtension.value)]?.intervals ?? null)
-        : null
-);
-
-const chordNotes = computed(() => {
-    if (!chord.value || !scaleNotes.value.length || !chordIntervals.value)
-        return {} as Record<string, any>;
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return {};
-    const scaleFormula = scales[idx].formula;
-    const scaleFormulaLength = scaleFormula.length;
-    const chordTones: Record<string, any> = {};
-    const chordToneIndexes = [
-        chord.value - 1,
-        chord.value - 1 + 2,
-        chord.value - 1 + 4,
-        scaleFormulaLength === 6 ? chord.value - 1 + 5 : chord.value - 1 + 6,
-    ];
-    chordToneIndexes.forEach((i, iterator) => {
-        if (i >= scaleFormulaLength) {
-            const refIndex = i - scaleFormulaLength;
-            chordTones[scaleNotes.value[refIndex].note] = {
-                ...scaleNotes.value[refIndex],
-                interval: chordIntervals.value?.[iterator],
-            };
-        } else {
-            chordTones[scaleNotes.value[i].note] = {
-                ...scaleNotes.value[i],
-                interval: chordIntervals.value?.[iterator],
-            };
-        }
-    });
-    return chordTones;
-});
-
-const modes = computed(() => {
+const modeOptions = computed(() => {
     const opts: { label: string; value: number }[] = [];
     const idx = selectedScaleIndex.value;
     if (idx < 0) return opts;
@@ -157,10 +76,43 @@ const modes = computed(() => {
     return opts;
 });
 
+const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(scale.value));
+
+// Adjusted scaleNotes (assert note string)
+const scaleNotes = computed(() => {
+    return getScaleNotes(selectedScaleIndex.value, mode.value, note.value);
+});
+
+const chords = useDiatonicChords(scaleNotes, selectedScaleIndex, scales);
+
+// Refined chordRoot/Extension types (no null => undefined)
+const chordRoot = computed<string | number | undefined>(() =>
+    chord.value ? chords.value[chord.value - 1]?.note : undefined
+);
+const chordExtension = computed<string | number | undefined>(() =>
+    chord.value ? chords.value[chord.value - 1]?.chord : undefined
+);
+
+const chordsMap = chordsByPrimaryAbbreviation();
+
+const chordIntervals = computed(() =>
+    getChordIntervals(chordExtension.value, chordsMap)
+);
+
+const chordNotes = computed(() =>
+    getChordNotes(
+        chord.value,
+        scaleNotes.value,
+        chordIntervals.value,
+        selectedScaleIndex.value,
+        scales
+    )
+);
+
 const title = computed(() => {
     let t = `Scale: ${note.value}-${scale.value}`;
-    if (mode.value > 1 && modes.value[mode.value - 1]) {
-        t += ` (${modes.value[mode.value - 1].label})`;
+    if (mode.value > 1 && modeOptions.value[mode.value - 1]) {
+        t += ` (${modeOptions.value[mode.value - 1].label})`;
     }
     if (chord.value) {
         t += ` / chord: ${chordRoot.value ?? ""}${chordExtension.value ?? ""}`;
@@ -210,7 +162,7 @@ function onClickChord(index: number) {
     <div class="w-full max-w-[1300px] mx-auto flex flex-col">
         <Label class="mb-4">{{ title }}</Label>
 
-        <vue-fretboard
+        <Fretboard
             :strings="tuning.data"
             :scale-notes="scaleNotes"
             :frets="20"
@@ -223,12 +175,12 @@ function onClickChord(index: number) {
         />
 
         <Label class="mb-4">Diatonic Chords</Label>
-        <vue-chords
+        <Chords
             :chords="chords"
             :active="activeChord"
             class="mb-8 w-full"
             @click-chord="onClickChord"
-        ></vue-chords>
+        ></Chords>
 
         <div class="mb-2 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
@@ -273,7 +225,7 @@ function onClickChord(index: number) {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem
-                            v-for="option in modes"
+                            v-for="option in modeOptions"
                             :value="option.value"
                             :key="option.label"
                         >
