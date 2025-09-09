@@ -9,6 +9,8 @@ export interface Chord {
     intervals: string[];
 }
 
+export type ChordNotes = Record<string, ScaleNote & { interval?: string }>;
+
 const chords: Chord[] = [
     {
         id: 1,
@@ -199,12 +201,12 @@ export function getChordNotes(
     chordIntervals: string[] | null,
     selectedScaleIndex: number,
     scales: Scale[]
-): Record<string, ScaleNote & { interval?: string }> {
+): ChordNotes {
     if (!chord || !scaleNotes.length || !chordIntervals) return {};
     if (selectedScaleIndex < 0) return {};
     const scaleFormula = scales[selectedScaleIndex].formula;
     const scaleFormulaLength = scaleFormula.length;
-    const chordTones: Record<string, ScaleNote & { interval?: string }> = {};
+    const chordTones: ChordNotes = {};
     const chordToneIndexes = [
         chord - 1,
         chord - 1 + 2,
