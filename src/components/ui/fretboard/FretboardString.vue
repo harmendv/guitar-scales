@@ -1,18 +1,12 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { getNoteByOffset, playTone } from "@/composables/useNotes";
+import { type ChordNotes } from "@/composables/useChords";
 import { cn } from "@/lib/utils";
 
 interface Highlight {
     note: string;
     degree?: string;
-}
-
-interface ChordNotes {
-    [note: string]: {
-        interval?: string;
-        [key: string]: unknown;
-    };
 }
 
 const props = withDefaults(

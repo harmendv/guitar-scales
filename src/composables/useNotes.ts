@@ -41,7 +41,7 @@ export function notesFlatMap(): string[] {
 };
 
 /* Helper function to get the note by offset */
-export function getNoteByOffset(start = "C", offset = 0): string | undefined {
+export function getNoteByOffset(start = "C", offset = 0): string {
     // Check Start exists of 1 number, and one letter
     const inputIndex = notesFlatMap().indexOf(start);
 
@@ -63,7 +63,7 @@ export function getNoteByOffset(start = "C", offset = 0): string | undefined {
         const proxy = new Proxy(notesFlatMap(), {});
         return proxy[outputIndex];
     } else {
-        console.log("Something went wrong");
+        return ''; // Return empty string if not found
     }
 }
 

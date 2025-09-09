@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
+import { type ScaleNote } from "@/composables/useNotes"
+import { type ChordNotes } from "@/composables/useChords";
 import FretboardString from "./FretboardString.vue";
 import FretboardNumber from "./FretboardNumber.vue";
 
@@ -10,17 +12,17 @@ interface GuitarString {
 
 const props = withDefaults(
     defineProps<{
-        strings?: GuitarString[];
-        frets?: number;
-        scaleNotes?: string[];
-        showDegrees?: boolean | string;
-        showRest?: boolean | string;
+        strings: GuitarString[];
+        frets: number;
+        scaleNotes: ScaleNote[];
+        showDegrees: boolean | string;
+        showRest: boolean | string;
         root: string;
-        chordRoot?: string | number | null;
-        chordNotes?: Record<string, unknown>;
+        chordRoot: string | number | undefined;
+        chordNotes: ChordNotes;
     }>(),
     {
-        strings: [
+        strings: () => [
             { note: "E", octave: 2 },
             { note: "A", octave: 2 },
             { note: "D", octave: 3 },
@@ -29,10 +31,10 @@ const props = withDefaults(
             { note: "E", octave: 4 },
         ],
         frets: 19,
-        scaleNotes: [],
+        scaleNotes: () => [],
         showDegrees: false,
         showRest: false,
-        chordRoot: null,
+        chordRoot: undefined,
         chordNotes: () => ({}),
     }
 );
