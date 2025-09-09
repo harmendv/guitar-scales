@@ -1,3 +1,5 @@
+import { type Scale, scales } from "@/composables/useScales";
+
 export interface Note {
     id: number;
     name: string;
@@ -63,6 +65,24 @@ export function getNoteByOffset(start = "C", offset = 0): string | undefined {
     } else {
         console.log("Something went wrong");
     }
+}
+
+export function getScaleNotes(scaleIndex: number, mode: number, note: string): ScaleNote[] {
+    const arr: ScaleNote[] = [];
+    const idx = scaleIndex;
+
+    if (idx < 0) return arr;
+    const scaleFormula = scales[idx].formula;
+    const scaleFormulaLength = scaleFormula.length;
+    const modeOffset = scaleFormula[mode-1].chromatic - 1;
+    for (let i = 0; i < scaleFormulaLength; i++) {
+        const n = getNoteByOffset(
+            `${note}`,
+            scaleFormula[i].chromatic - 1 + (12 - modeOffset)
+        ) as string;
+        arr.push({ note: n, degree: scaleFormula[i].degree });
+    }
+    return arr;
 }
 
 /**

@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
 import { scales, scalesFlatMap } from "@/composables/useScales";
 import { tunings } from "@/composables/useTunings";
-import { notes as baseNotes, getNoteByOffset } from "@/composables/useNotes";
+import { notes as baseNotes, getNoteByOffset, getScaleNotes } from "@/composables/useNotes";
 import { chordsByPrimaryAbbreviation, getChordIntervals, getChordNotes, useDiatonicChords } from "@/composables/useChords";
 
 import VueFretboard from "./components/VueFretboard.vue";
@@ -65,25 +65,22 @@ const scalesOptions = computed(() =>
 const notesOptions = computed(() =>
     baseNotes.map((n) => ({ label: n.name, value: n.name }))
 );
+const modeOptions = computed(() => {
+    const opts: { label: string; value: number }[] = [];
+    const idx = selectedScaleIndex.value;
+    if (idx < 0) return opts;
+    const formula = scales[idx].formula;
+    formula.forEach((entry) =>
+        opts.push({ label: entry.mode, value: entry.id })
+    );
+    return opts;
+});
 
 const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(scale.value));
 
 // Adjusted scaleNotes (assert note string)
 const scaleNotes = computed(() => {
-    const arr: { note: string; degree: string }[] = [];
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return arr;
-    const scaleFormula = scales[idx].formula;
-    const scaleFormulaLength = scaleFormula.length;
-    const modeOffset = scaleFormula[mode.value - 1].chromatic - 1;
-    for (let i = 0; i < scaleFormulaLength; i++) {
-        const n = getNoteByOffset(
-            `${note.value}`,
-            scaleFormula[i].chromatic - 1 + (12 - modeOffset)
-        ) as string;
-        arr.push({ note: n, degree: scaleFormula[i].degree });
-    }
-    return arr;
+    return getScaleNotes(selectedScaleIndex.value, mode.value, note.value);
 });
 
 const chords = useDiatonicChords(scaleNotes, selectedScaleIndex, scales);
@@ -114,21 +111,12 @@ const chordNotes = computed(() =>
     )
 );
 
-const modes = computed(() => {
-    const opts: { label: string; value: number }[] = [];
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return opts;
-    const formula = scales[idx].formula;
-    formula.forEach((entry) =>
-        opts.push({ label: entry.mode, value: entry.id })
-    );
-    return opts;
-});
+
 
 const title = computed(() => {
     let t = `Scale: ${note.value}-${scale.value}`;
-    if (mode.value > 1 && modes.value[mode.value - 1]) {
-        t += ` (${modes.value[mode.value - 1].label})`;
+    if (mode.value > 1 && modeOptions.value[mode.value - 1]) {
+        t += ` (${modeOptions.value[mode.value - 1].label})`;
     }
     if (chord.value) {
         t += ` / chord: ${chordRoot.value ?? ""}${chordExtension.value ?? ""}`;
@@ -241,7 +229,7 @@ function onClickChord(index: number) {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem
-                            v-for="option in modes"
+                            v-for="option in modeOptions"
                             :value="option.value"
                             :key="option.label"
                         >
