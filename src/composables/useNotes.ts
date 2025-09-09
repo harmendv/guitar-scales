@@ -1,5 +1,14 @@
-/* Array of all the notes */
-const notes = [
+export interface Note {
+    id: number;
+    name: string;
+}
+
+export interface ScaleNote {
+    note: string;
+    degree: string;
+}
+
+export const notes: Note[] = [
     { id: 1, name: "A" },
     { id: 2, name: "Bb" },
     { id: 3, name: "B" },
@@ -14,17 +23,29 @@ const notes = [
     { id: 12, name: "G♯" },
 ];
 
+export const noteSemitoneMap: Record<string, number> = {
+    'C': 0, 'C#': 1, 'Db': 1, 'C♯': 1,
+    'D': 2, 'D#': 3, 'Eb': 3, 'D♯': 3,
+    'E': 4,
+    'F': 5, 'F#': 6, 'Gb': 6, 'F♯': 6,
+    'G': 7, 'G#': 8, 'Ab': 8, 'G♯': 8,
+    'A': 9, 'A#': 10, 'Bb': 10, 'A♯': 10,
+    'B': 11
+};
+
 /* Flat Map of all the notes */
-const notesFlatMap = notes.flatMap((i) => i.name);
+export function notesFlatMap(): string[] {
+    return notes.flatMap((i) => i.name)
+};
 
 /* Helper function to get the note by offset */
-function getNoteByOffset(start = "C", offset = 0) {
+export function getNoteByOffset(start = "C", offset = 0): string | undefined {
     // Check Start exists of 1 number, and one letter
-    const inputIndex = notesFlatMap.indexOf(start);
+    const inputIndex = notesFlatMap().indexOf(start);
 
     if (
         typeof start === "string" && // First is a string
-        notesFlatMap.includes(start) // And the string is allowed
+        notesFlatMap().includes(start) // And the string is allowed
     ) {
         // Iterate the amount the offset requires
         let outputIndex = inputIndex;
@@ -37,7 +58,7 @@ function getNoteByOffset(start = "C", offset = 0) {
             }
         }
 
-        const proxy = new Proxy(notesFlatMap, {});
+        const proxy = new Proxy(notesFlatMap(), {});
         return proxy[outputIndex];
     } else {
         console.log("Something went wrong");
@@ -48,22 +69,13 @@ function getNoteByOffset(start = "C", offset = 0) {
  * Play a tone for a given note and octave using Web Audio API
  * Smoothly ramps down gain to avoid clipping.
  */
-function playTone(note, octave) {
-    const noteOffsets = {
-        'C': 0, 'C#': 1, 'Db': 1, 'C♯': 1,
-        'D': 2, 'D#': 3, 'Eb': 3, 'D♯': 3,
-        'E': 4,
-        'F': 5, 'F#': 6, 'Gb': 6, 'F♯': 6,
-        'G': 7, 'G#': 8, 'Ab': 8, 'G♯': 8,
-        'A': 9, 'A#': 10, 'Bb': 10, 'A♯': 10,
-        'B': 11
-    };
+export function playTone(note: string, octave: number): void {
     let nName = note.replace('♯', '#').replace('♭', 'b');
-    const semitone = noteOffsets[nName] ?? noteOffsets[note];
+    const semitone = noteSemitoneMap[nName] ?? noteSemitoneMap[note];
     if (semitone === undefined) return;
     const midi = (octave + 1) * 12 + semitone;
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = new window.AudioContext();
     const osc = ctx.createOscillator();
     osc.type = 'sine';
     osc.frequency.value = freq;
@@ -79,4 +91,3 @@ function playTone(note, octave) {
     osc.onended = () => ctx.close();
 }
 
-export { notes, notesFlatMap, getNoteByOffset, playTone };

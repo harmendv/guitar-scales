@@ -1,5 +1,5 @@
 <script>
-import { getNoteByOffset, playTone } from "../utils/notes";
+import { getNoteByOffset, playTone } from "@/composables/useNotes";
 import { cn } from "@/lib/utils";
 
 export default {

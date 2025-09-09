@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
+import { scales, scalesFlatMap } from "@/composables/useScales";
+import { tunings } from "@/composables/useTunings";
+import { notes as baseNotes, getNoteByOffset } from "@/composables/useNotes";
+import { chordsByPrimaryAbbreviation, getChordIntervals, getChordNotes, useDiatonicChords } from "@/composables/useChords";
+
 import VueFretboard from "./components/VueFretboard.vue";
 import VueChords from "./components/VueChords.vue";
-import { scales, scalesFlatMap } from "./utils/scales.js";
-import { tunings } from './utils/tunings.js';
-import { notes as baseNotes, getNoteByOffset } from "./utils/notes.js";
-import { chordsByPrimaryAbbreviation } from "./utils/chords.js";
 import {
     Select,
     SelectContent,
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 
 // URL search params (reactive)
 const params = useUrlSearchParams("history");
+
 
 // Helper
 function preferredColorScheme() {
@@ -41,7 +43,8 @@ const chord = ref<number | null>(
     params.chord ? Number.parseInt(params.chord as string, 10) : null
 );
 // Find initial tuning object by value, fallback to default
-const initialTuning = tunings.find(t => t.value === params.tuning) || tunings[0];
+const initialTuning =
+    tunings.find((t) => t.value === params.tuning) || tunings[0];
 const tuning = ref(initialTuning);
 const noteNames = ref<string>((params.noteNames as string) || "notes");
 const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
@@ -83,17 +86,7 @@ const scaleNotes = computed(() => {
     return arr;
 });
 
-const chords = computed(() => {
-    const list: { note: string; chord: string; degree: string }[] = [];
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return list;
-    const formula = scales[idx].formula;
-    formula.forEach((entry, index) => {
-        const n = scaleNotes.value[index]?.note;
-        list.push({ note: n, chord: entry.chord, degree: entry.degree });
-    });
-    return list;
-});
+const chords = useDiatonicChords(scaleNotes, selectedScaleIndex, scales);
 
 // Refined chordRoot/Extension types (no null => undefined)
 const chordRoot = computed<string | number | undefined>(() =>
@@ -103,48 +96,23 @@ const chordExtension = computed<string | number | undefined>(() =>
     chord.value ? chords.value[chord.value - 1]?.chord : undefined
 );
 
-// Safe map cast for intervals
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const chordsMap = chordsByPrimaryAbbreviation as Record<
-    string,
-    { intervals: string[] }
->;
-const chordIntervals = computed<string[] | null>(() =>
-    chordExtension.value
-        ? (chordsMap[String(chordExtension.value)]?.intervals ?? null)
-        : null
+
+
+const chordsMap = chordsByPrimaryAbbreviation();
+
+const chordIntervals = computed(() =>
+    getChordIntervals(chordExtension.value, chordsMap)
 );
 
-const chordNotes = computed(() => {
-    if (!chord.value || !scaleNotes.value.length || !chordIntervals.value)
-        return {} as Record<string, any>;
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return {};
-    const scaleFormula = scales[idx].formula;
-    const scaleFormulaLength = scaleFormula.length;
-    const chordTones: Record<string, any> = {};
-    const chordToneIndexes = [
-        chord.value - 1,
-        chord.value - 1 + 2,
-        chord.value - 1 + 4,
-        scaleFormulaLength === 6 ? chord.value - 1 + 5 : chord.value - 1 + 6,
-    ];
-    chordToneIndexes.forEach((i, iterator) => {
-        if (i >= scaleFormulaLength) {
-            const refIndex = i - scaleFormulaLength;
-            chordTones[scaleNotes.value[refIndex].note] = {
-                ...scaleNotes.value[refIndex],
-                interval: chordIntervals.value?.[iterator],
-            };
-        } else {
-            chordTones[scaleNotes.value[i].note] = {
-                ...scaleNotes.value[i],
-                interval: chordIntervals.value?.[iterator],
-            };
-        }
-    });
-    return chordTones;
-});
+const chordNotes = computed(() =>
+    getChordNotes(
+        chord.value,
+        scaleNotes.value,
+        chordIntervals.value,
+        selectedScaleIndex.value,
+        scales
+    )
+);
 
 const modes = computed(() => {
     const opts: { label: string; value: number }[] = [];

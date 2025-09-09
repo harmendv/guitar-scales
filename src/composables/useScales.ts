@@ -1,5 +1,19 @@
-/* Array of all the scales */
-const scales = [
+export interface ScaleFormulaEntry {
+    chord: string;
+    degree: string;
+    mode: string;
+    id: number;
+    chromatic: number;
+}
+
+export interface Scale {
+    id: number;
+    name: string;
+    slug: string;
+    formula: ScaleFormulaEntry[];
+}
+
+export const scales: Scale[] = [
     {
         id: 1,
         name: "Major",
@@ -471,7 +485,4 @@ const scales = [
     },
 ];
 
-/* Flat Map of all the notes */
-const scalesFlatMap = scales.flatMap((i) => i.slug);
-
-export { scalesFlatMap, scales };
+export const scalesFlatMap: string[] = scales.flatMap((i) => i.slug);
