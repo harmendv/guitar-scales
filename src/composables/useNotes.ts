@@ -86,28 +86,33 @@ export function getScaleNotes(scaleIndex: number, mode: number, note: string): S
 }
 
 /**
- * Play a tone for a given note and octave using Web Audio API
- * Smoothly ramps down gain to avoid clipping.
+ * Helper to convert sharp notes to flat equivalents for file naming
  */
-export function playTone(note: string, octave: number): void {
-    let nName = note.replace('♯', '#').replace('♭', 'b');
-    const semitone = noteSemitoneMap[nName] ?? noteSemitoneMap[note];
-    if (semitone === undefined) return;
-    const midi = (octave + 1) * 12 + semitone;
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    const ctx = new window.AudioContext();
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    const gain = ctx.createGain();
-    gain.gain.value = 0.15;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    // Ramp down gain smoothly to avoid clipping
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.28);
-    osc.stop(ctx.currentTime + 0.3);
-    osc.onended = () => ctx.close();
+function toFlat(note: string): string {
+    switch (note) {
+        case "A#": case "A♯": return "Bb";
+        case "C#": case "C♯": return "Db";
+        case "D#": case "D♯": return "Eb";
+        case "F#": case "F♯": return "Gb";
+        case "G#": case "G♯": return "Ab";
+        default: return note;
+    }
 }
 
+/**
+ * Play a tone for a given note and octave using an mp3 sample from public/sounds
+ */
+export function playTone(note: string, octave: number): void {
+    // Convert sharps to flats for file naming
+    let nName = note.replace('♯', '#').replace('♭', 'b');
+    nName = toFlat(nName);
+    // Build file name, e.g. Bb4.mp3
+    const fileName = `${nName}${octave}.mp3`;
+    const filePath = `public/sounds/${fileName}`;
+    const audio = new window.Audio(filePath);
+    audio.volume = 0.7;
+    audio.play().catch(() => {
+        // Optionally handle error (file not found, etc)
+        // console.warn(`Audio file not found: ${filePath}`);
+    });
+}
