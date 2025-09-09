@@ -11,7 +11,6 @@ import {
     useDiatonicChords,
 } from "@/composables/useChords";
 import { Fretboard } from "@/components/ui/fretboard";
-import { Chords } from "@/components/ui/chords";
 import { Logo } from "@/components/ui/logo";
 
 import {
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ChordButton } from "@/components/ui/chord-button";
 
 // URL search params (reactive)
 const params = useUrlSearchParams("history");
@@ -132,10 +132,10 @@ watch(noteNames, (v) => (params.noteNames = v));
 watch(noteVisibility, (v) => (params.noteVisibility = v));
 
 function onClickChord(index: number) {
-    if (chord.value === index) {
+    if (chord.value === index + 1) {
         chord.value = null;
     } else {
-        chord.value = index;
+        chord.value = index + 1;
     }
 }
 </script>
@@ -157,12 +157,9 @@ function onClickChord(index: number) {
         />
 
         <Label class="mb-4">Diatonic Chords</Label>
-        <Chords
-            :chords="chords"
-            :active="activeChord"
-            class="mb-8 w-full"
-            @click-chord="onClickChord"
-        ></Chords>
+        <div class="grid grid-cols-4 md:flex w-full gap-6 mb-8">
+            <ChordButton v-for="(chord, index) in chords" :active="activeChord === index + 1" :note="chord.note" :chord="chord.chord" @click="onClickChord(index)" />
+        </div>
 
         <div class="mb-2 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
