@@ -108,7 +108,7 @@ export function playTone(note: string, octave: number): void {
     nName = toFlat(nName);
     // Build file name, e.g. Bb4.mp3
     const fileName = `${nName}${octave}.mp3`;
-    const filePath = `public/sounds/${fileName}`;
+    const filePath = `sounds/${fileName}`;
     const audio = new window.Audio(filePath);
     audio.volume = 0.7;
     audio.play().catch(() => {
