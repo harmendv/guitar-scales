@@ -131,8 +131,6 @@ watch(tuning, (v) => (params.tuning = v.value)); // store kebab-case value
 watch(noteNames, (v) => (params.noteNames = v));
 watch(noteVisibility, (v) => (params.noteVisibility = v));
 
-
-
 function onClickChord(index: number) {
     if (chord.value === index) {
         chord.value = null;
@@ -280,7 +278,7 @@ function onClickChord(index: number) {
                     class="text-indigo-500"
                     target="_blank"
                     href="https://github.com/harmendv"
-                >harmendv</a
+                    >harmendv</a
                 >
             </span>
 
