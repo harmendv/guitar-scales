@@ -3,11 +3,11 @@ import { ref, computed, watch, onMounted } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
 import { scales, scalesFlatMap } from "@/composables/useScales";
 import { tunings } from "@/composables/useTunings";
-import { notes as baseNotes, getNoteByOffset, getScaleNotes } from "@/composables/useNotes";
+import { notes as baseNotes, getScaleNotes } from "@/composables/useNotes";
 import { chordsByPrimaryAbbreviation, getChordIntervals, getChordNotes, useDiatonicChords } from "@/composables/useChords";
+import { Fretboard } from "@/components/ui/fretboard";
+import { Chords } from "@/components/ui/chords";
 
-import VueFretboard from "./components/VueFretboard.vue";
-import VueChords from "./components/VueChords.vue";
 import {
     Select,
     SelectContent,
@@ -93,8 +93,6 @@ const chordExtension = computed<string | number | undefined>(() =>
     chord.value ? chords.value[chord.value - 1]?.chord : undefined
 );
 
-
-
 const chordsMap = chordsByPrimaryAbbreviation();
 
 const chordIntervals = computed(() =>
@@ -110,8 +108,6 @@ const chordNotes = computed(() =>
         scales
     )
 );
-
-
 
 const title = computed(() => {
     let t = `Scale: ${note.value}-${scale.value}`;
@@ -166,7 +162,7 @@ function onClickChord(index: number) {
     <div class="w-full max-w-[1300px] mx-auto flex flex-col">
         <Label class="mb-4">{{ title }}</Label>
 
-        <vue-fretboard
+        <Fretboard
             :strings="tuning.data"
             :scale-notes="scaleNotes"
             :frets="20"
@@ -179,12 +175,12 @@ function onClickChord(index: number) {
         />
 
         <Label class="mb-4">Diatonic Chords</Label>
-        <vue-chords
+        <Chords
             :chords="chords"
             :active="activeChord"
             class="mb-8 w-full"
             @click-chord="onClickChord"
-        ></vue-chords>
+        ></Chords>
 
         <div class="mb-2 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
