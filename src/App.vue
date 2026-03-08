@@ -10,6 +10,7 @@ import {
     getChordNotes,
     useDiatonicChords,
 } from "@/composables/useChords";
+import { use3nps } from "@/composables/use3nps";
 import { Fretboard } from "@/components/ui/fretboard";
 import { Logo } from "@/components/ui/logo";
 
@@ -39,6 +40,11 @@ const initialTuning =
 const tuning = ref(initialTuning);
 const noteNames = ref<string>((params.noteNames as string) || "notes");
 const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
+const show3nps = ref<boolean>((params.show3nps as string) === "1");
+const threeNpsShapeIndex = ref<number>(
+    Math.max(0, (Number.parseInt(params.shape as string, 10) || 1) - 1)
+);
+const fretCount = 20;
 
 const noteNamesOptions = [
     { label: "Scale and chord Degrees", value: "degrees" },
@@ -99,6 +105,18 @@ const chordNotes = computed(() =>
         scales
     )
 );
+const { shapes: threeNpsShapes } = use3nps(
+    scaleNotes,
+    computed(() => tuning.value.data),
+    fretCount
+);
+
+const activeThreeNpsShape = computed<number[][]>(() => {
+    if (!threeNpsShapes.value.length) return [];
+    const maxIndex = threeNpsShapes.value.length - 1;
+    const safeIndex = Math.min(Math.max(threeNpsShapeIndex.value, 0), maxIndex);
+    return threeNpsShapes.value[safeIndex];
+});
 
 const title = computed(() => {
     let t = `Scale: ${note.value}-${scale.value}`;
@@ -130,6 +148,17 @@ watch(chord, (v) => (params.chord = v as any));
 watch(tuning, (v) => (params.tuning = v.value)); // store kebab-case value
 watch(noteNames, (v) => (params.noteNames = v));
 watch(noteVisibility, (v) => (params.noteVisibility = v));
+watch(show3nps, (v) => (params.show3nps = v ? "1" : "0"));
+watch(threeNpsShapeIndex, (v) => (params.shape = String(v + 1)));
+watch(threeNpsShapes, (shapes) => {
+    if (!shapes.length) {
+        threeNpsShapeIndex.value = 0;
+        return;
+    }
+    if (threeNpsShapeIndex.value > shapes.length - 1) {
+        threeNpsShapeIndex.value = shapes.length - 1;
+    }
+});
 
 function onClickChord(index: number) {
     if (chord.value === index + 1) {
@@ -137,6 +166,19 @@ function onClickChord(index: number) {
     } else {
         chord.value = index + 1;
     }
+}
+
+function next3npsShape() {
+    if (!threeNpsShapes.value.length) return;
+    threeNpsShapeIndex.value =
+        (threeNpsShapeIndex.value + 1) % threeNpsShapes.value.length;
+}
+
+function prev3npsShape() {
+    if (!threeNpsShapes.value.length) return;
+    threeNpsShapeIndex.value =
+        (threeNpsShapeIndex.value - 1 + threeNpsShapes.value.length) %
+        threeNpsShapes.value.length;
 }
 </script>
 
@@ -146,7 +188,9 @@ function onClickChord(index: number) {
         <Fretboard
             :strings="tuning.data"
             :scale-notes="scaleNotes"
-            :frets="20"
+            :frets="fretCount"
+            :shape-active="show3nps"
+            :shape-frets-by-string="activeThreeNpsShape"
             :chord-root="chordRoot"
             :chord-notes="chordNotes"
             :show-degrees="noteNames === 'degrees'"
@@ -154,6 +198,43 @@ function onClickChord(index: number) {
             :show-rest="noteVisibility === 'all'"
             class="mb-8"
         />
+
+        <div class="flex flex-wrap items-center gap-3 mb-8">
+            <button
+                type="button"
+                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                :class="{
+                    '!border-indigo-700 !bg-indigo-100 dark:!bg-indigo-900 dark:!border-indigo-500':
+                        show3nps,
+                }"
+                @click="show3nps = !show3nps"
+            >
+                3NPS
+            </button>
+            <button
+                type="button"
+                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="!threeNpsShapes.length"
+                @click="prev3npsShape"
+            >
+                Prev Shape
+            </button>
+            <button
+                type="button"
+                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="!threeNpsShapes.length"
+                @click="next3npsShape"
+            >
+                Next Shape
+            </button>
+            <span class="text-sm text-slate-500 dark:text-slate-300">
+                {{
+                    threeNpsShapes.length
+                        ? `Shape ${threeNpsShapeIndex + 1} / ${threeNpsShapes.length}`
+                        : "No 3NPS shape for this scale/tuning"
+                }}
+            </span>
+        </div>
 
         <Label class="mb-4">Diatonic Chords</Label>
         <div class="grid grid-cols-4 md:flex w-full gap-6 mb-8">

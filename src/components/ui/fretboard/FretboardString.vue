@@ -15,6 +15,8 @@ const props = withDefaults(
         startOctave: number;
         frets?: number;
         highlight?: Highlight[];
+        shapeFrets?: number[];
+        shapeActive?: boolean;
         degrees?: Record<string, string>;
         showDegrees?: boolean | string;
         showRest?: boolean | string;
@@ -25,6 +27,8 @@ const props = withDefaults(
     {
         frets: 19,
         highlight: () => [],
+        shapeFrets: () => [],
+        shapeActive: false,
         degrees: () => ({}),
         showDegrees: false,
         showRest: false,
@@ -37,16 +41,22 @@ const highlightNotes = computed(() => props.highlight.map((h) => h.note));
 
 const notes = computed(() => {
     let octave = props.startOctave;
+    const chordShapeOnlyMode = Boolean(props.chordRoot) && props.shapeActive;
     const notesArr = Array.from({ length: props.frets }, (_, i) => {
         const note = getNoteByOffset(props.start, i);
         if (note === "C" && i !== 0) octave++;
         const highlightIdx = highlightNotes.value.indexOf(note);
+        const isShapeFret = props.shapeFrets.includes(i);
         return {
             name: note,
             octave,
             highlight: props.chordRoot
-                ? Boolean(props.chordNotes[note])
-                : highlightNotes.value.includes(note),
+                ? chordShapeOnlyMode
+                  ? Boolean(props.chordNotes[note]) && isShapeFret
+                  : Boolean(props.chordNotes[note])
+                : props.shapeActive
+                  ? highlightNotes.value.includes(note) && isShapeFret
+                  : highlightNotes.value.includes(note),
             root: props.chordRoot
                 ? note === props.chordRoot
                 : note === props.root,
@@ -80,7 +90,7 @@ const notes = computed(() => {
                         note.highlight
                             ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 border-indigo-600 dark:text-indigo-400 shadow-lg'
                             : '',
-                        note.root
+                        note.root && (!shapeActive || note.highlight)
                             ? 'bg-red-100 dark:bg-red-950 text-red-600 border-red-700'
                             : '',
                         !note.highlight && showRest !== true ? 'opacity-0' : '',
