@@ -143,7 +143,6 @@ function onClickChord(index: number) {
 <template>
     <div class="w-full max-w-[1300px] mx-auto flex flex-col">
         <Label class="mb-4">{{ title }}</Label>
-
         <Fretboard
             :strings="tuning.data"
             :scale-notes="scaleNotes"
@@ -158,10 +157,16 @@ function onClickChord(index: number) {
 
         <Label class="mb-4">Diatonic Chords</Label>
         <div class="grid grid-cols-4 md:flex w-full gap-6 mb-8">
-            <ChordButton v-for="(chord, index) in chords" :active="activeChord === index + 1" :note="chord.note" :chord="chord.chord" @click="onClickChord(index)" />
+            <ChordButton
+                v-for="(chord, index) in chords"
+                :active="activeChord === index + 1"
+                :note="chord.note"
+                :chord="chord.chord"
+                @click="onClickChord(index)"
+            />
         </div>
 
-        <div class="mb-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="mb-2 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
             <div>
                 <Label class="mb-4">Root</Label>
                 <Select v-model="note">
