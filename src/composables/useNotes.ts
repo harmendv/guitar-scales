@@ -110,7 +110,7 @@ export function playTone(note: string, octave: number): void {
     const fileName = `${nName}${octave}.mp3`;
     const filePath = `sounds/${fileName}`;
     const audio = new window.Audio(filePath);
-    audio.volume = 0.7;
+    audio.volume = 1;
     audio.play().catch(() => {
         // Optionally handle error (file not found, etc)
         // console.warn(`Audio file not found: ${filePath}`);

@@ -18,7 +18,7 @@ const props = withDefaults(
     >
         <div
             :class="[
-                'relative z-10 p-0 w-8 h-8  flex font-mono text-base md:text-md items-center justify-center rounded',
+                'relative z-10 p-0 w-8 h-8  flex font-mono text-sm md:text-md items-center justify-center rounded-full',
                 props.highlight ? 'bg-slate-300 dark:bg-slate-900' : '',
             ]"
         >

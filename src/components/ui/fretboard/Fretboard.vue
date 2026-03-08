@@ -15,6 +15,8 @@ const props = withDefaults(
         strings: GuitarString[];
         frets: number;
         scaleNotes: ScaleNote[];
+        shapeFretsByString?: number[][];
+        shapeActive?: boolean;
         showDegrees: boolean | string;
         showRest: boolean | string;
         root: string;
@@ -32,6 +34,8 @@ const props = withDefaults(
         ],
         frets: 19,
         scaleNotes: () => [],
+        shapeFretsByString: () => [],
+        shapeActive: false,
         showDegrees: false,
         showRest: false,
         chordRoot: undefined,
@@ -42,6 +46,10 @@ const props = withDefaults(
 const reversedStrings = computed<GuitarString[]>(() => {
     return Array.from(props.strings).reverse();
 });
+
+const reversedShapeFretsByString = computed<number[][]>(() =>
+    Array.from(props.shapeFretsByString).reverse()
+);
 </script>
 
 <template>
@@ -56,6 +64,8 @@ const reversedStrings = computed<GuitarString[]>(() => {
                 :start-octave="start.octave"
                 :key="index"
                 :highlight="scaleNotes"
+                :shape-frets="reversedShapeFretsByString[index] || []"
+                :shape-active="shapeActive"
                 :chord-root="chordRoot"
                 :chord-notes="chordNotes"
                 :root="root"
