@@ -86,9 +86,9 @@ const notes = computed(() => {
             <div
                 :class="
                     cn([
-                        'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 h-8 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-400 dark:text-indigo-400 border-1 border-transparent flex-shrink-0 transition cursor-pointer hover:scale-110',
+                        'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 h-8 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-400 dark:text-slate-500 border-1 border-transparent flex-shrink-0 transition cursor-pointer hover:scale-110',
                         note.highlight
-                            ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 border-indigo-600 dark:text-indigo-400 shadow-lg'
+                            ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 border-indigo-600 dark:text-indigo-300 shadow-lg'
                             : '',
                         note.root && (!shapeActive || note.highlight)
                             ? 'bg-red-100 dark:bg-red-950 text-red-600 border-red-700'
