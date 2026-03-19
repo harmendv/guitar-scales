@@ -17,6 +17,9 @@ const props = withDefaults(
         scaleNotes: ScaleNote[];
         shapeFretsByString?: number[][];
         shapeActive?: boolean;
+        viewMode?: "full" | "3nps" | "position";
+        positionStartFret?: number;
+        positionSpan?: number;
         showDegrees: boolean | string;
         showRest: boolean | string;
         root: string;
@@ -36,6 +39,9 @@ const props = withDefaults(
         scaleNotes: () => [],
         shapeFretsByString: () => [],
         shapeActive: false,
+        viewMode: "full",
+        positionStartFret: 0,
+        positionSpan: 5,
         showDegrees: false,
         showRest: false,
         chordRoot: undefined,
@@ -66,6 +72,9 @@ const reversedShapeFretsByString = computed<number[][]>(() =>
                 :highlight="scaleNotes"
                 :shape-frets="reversedShapeFretsByString[index] || []"
                 :shape-active="shapeActive"
+                :view-mode="viewMode"
+                :position-start-fret="positionStartFret"
+                :position-span="positionSpan"
                 :chord-root="chordRoot"
                 :chord-notes="chordNotes"
                 :root="root"

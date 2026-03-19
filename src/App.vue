@@ -3,7 +3,11 @@ import { ref, computed, watch } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
 import { Pencil, Plus } from "lucide-vue-next";
 import { scales, scalesFlatMap } from "@/composables/useScales";
-import { notes as baseNotes, getScaleNotes } from "@/composables/useNotes";
+import {
+    notes as baseNotes,
+    getNoteByOffset,
+    getScaleNotes,
+} from "@/composables/useNotes";
 import {
     chordsByPrimaryAbbreviation,
     getChordIntervals,
@@ -11,6 +15,7 @@ import {
     useDiatonicChords,
 } from "@/composables/useChords";
 import { use3nps } from "@/composables/use3nps";
+import { usePositionView } from "@/composables/usePositionView";
 import { useCustomTunings } from "@/composables/useCustomTunings";
 import {
     builtInTunings,
@@ -95,11 +100,31 @@ const draftTuning = ref<{
 
 const noteNames = ref<string>((params.noteNames as string) || "notes");
 const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
-const show3nps = ref<boolean>((params.show3nps as string) === "1");
+type FretboardViewMode = "full" | "3nps" | "position";
+const legacyShow3nps = (params.show3nps as string) === "1";
+const viewModeParam = params.viewMode as string | undefined;
+const viewMode = ref<FretboardViewMode>(
+    viewModeParam === "full" || viewModeParam === "3nps" || viewModeParam === "position"
+        ? viewModeParam
+        : legacyShow3nps
+          ? "3nps"
+          : "full"
+);
+const positionStartFret = ref<number>(
+    Math.max(0, Number.parseInt(params.positionStart as string, 10) || 0)
+);
+const positionSpan = ref<number>(
+    Math.max(1, Number.parseInt(params.positionSpan as string, 10) || 5)
+);
 const threeNpsShapeIndex = ref<number>(
     Math.max(0, (Number.parseInt(params.shape as string, 10) || 1) - 1)
 );
 const fretCount = 20;
+const viewModeOptions: { label: string; value: FretboardViewMode }[] = [
+    { label: "Full neck", value: "full" },
+    { label: "3NPS", value: "3nps" },
+    { label: "Position", value: "position" },
+];
 
 const noteNamesOptions = [
     { label: "Scale and chord Degrees", value: "degrees" },
@@ -170,6 +195,20 @@ const { shapes: threeNpsShapes } = use3nps(
     computed(() => tuning.value.data),
     fretCount
 );
+const {
+    safeStartFret: safePositionStartFret,
+    safeSpan: safePositionSpan,
+    endFret: positionEndFret,
+} = usePositionView(
+    positionStartFret,
+    positionSpan,
+    computed(() => fretCount)
+);
+const positionSummary = computed(
+    () => `Frets ${safePositionStartFret.value}-${positionEndFret.value}`
+);
+const show3nps = computed(() => viewMode.value === "3nps");
+const showPosition = computed(() => viewMode.value === "position");
 
 const activeThreeNpsShape = computed<number[][]>(() => {
     if (!threeNpsShapes.value.length) return [];
@@ -207,7 +246,22 @@ watch(mode, (v) => {
 watch(chord, (v) => (params.chord = v as any));
 watch(noteNames, (v) => (params.noteNames = v));
 watch(noteVisibility, (v) => (params.noteVisibility = v));
-watch(show3nps, (v) => (params.show3nps = v ? "1" : "0"));
+watch(viewMode, (v) => {
+    params.viewMode = v;
+    params.show3nps = v === "3nps" ? "1" : "0";
+});
+watch(safePositionStartFret, (v) => {
+    if (positionStartFret.value !== v) {
+        positionStartFret.value = v;
+    }
+    params.positionStart = String(v);
+});
+watch(safePositionSpan, (v) => {
+    if (positionSpan.value !== v) {
+        positionSpan.value = v;
+    }
+    params.positionSpan = String(v);
+});
 watch(threeNpsShapeIndex, (v) => (params.shape = String(v + 1)));
 watch(threeNpsShapes, (shapes) => {
     if (!shapes.length) {
@@ -257,6 +311,26 @@ function prev3npsShape() {
     threeNpsShapeIndex.value =
         (threeNpsShapeIndex.value - 1 + threeNpsShapes.value.length) %
         threeNpsShapes.value.length;
+}
+
+function nextPosition() {
+    positionStartFret.value = safePositionStartFret.value + safePositionSpan.value;
+}
+
+function prevPosition() {
+    positionStartFret.value = safePositionStartFret.value - safePositionSpan.value;
+}
+
+function resetPositionToRoot() {
+    const lowestString = tuning.value.data[0];
+    if (!lowestString) return;
+    for (let fret = 0; fret < fretCount; fret++) {
+        if (getNoteByOffset(lowestString.note, fret) === note.value) {
+            positionStartFret.value = fret;
+            return;
+        }
+    }
+    positionStartFret.value = 0;
 }
 
 function openCreateCustomTuning() {
@@ -316,6 +390,9 @@ function onDeleteCustomTuning(id?: string) {
             :frets="fretCount"
             :shape-active="show3nps"
             :shape-frets-by-string="activeThreeNpsShape"
+            :view-mode="viewMode"
+            :position-start-fret="safePositionStartFret"
+            :position-span="safePositionSpan"
             :chord-root="chordRoot"
             :chord-notes="chordNotes"
             :show-degrees="noteNames === 'degrees'"
@@ -325,20 +402,24 @@ function onDeleteCustomTuning(id?: string) {
         />
 
         <div class="flex flex-wrap items-center gap-3 mb-8">
-            <button
-                type="button"
-                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
-                :class="{
-                    '!border-indigo-700 !bg-indigo-100 dark:!bg-indigo-900 dark:!border-indigo-500':
-                        show3nps,
-                }"
-                @click="show3nps = !show3nps"
-            >
-                3NPS
-            </button>
+            <Select v-model="viewMode">
+                <SelectTrigger class="w-40">
+                    <SelectValue placeholder="View mode" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem
+                        v-for="option in viewModeOptions"
+                        :key="option.value"
+                        :value="option.value"
+                    >
+                        {{ option.label }}
+                    </SelectItem>
+                </SelectContent>
+            </Select>
             <button
                 type="button"
                 class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
+                v-if="show3nps"
                 :disabled="!threeNpsShapes.length"
                 @click="prev3npsShape"
             >
@@ -347,18 +428,65 @@ function onDeleteCustomTuning(id?: string) {
             <button
                 type="button"
                 class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
+                v-if="show3nps"
                 :disabled="!threeNpsShapes.length"
                 @click="next3npsShape"
             >
                 Next Shape
             </button>
-            <span class="text-sm text-slate-500 dark:text-slate-300">
+            <span v-if="show3nps" class="text-sm text-slate-500 dark:text-slate-300">
                 {{
                     threeNpsShapes.length
                         ? `Shape ${threeNpsShapeIndex + 1} / ${threeNpsShapes.length}`
                         : "No 3NPS shape for this scale/tuning"
                 }}
             </span>
+            <template v-if="showPosition">
+                <button
+                    type="button"
+                    class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                    @click="prevPosition"
+                >
+                    Prev Position
+                </button>
+                <button
+                    type="button"
+                    class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                    @click="nextPosition"
+                >
+                    Next Position
+                </button>
+                <button
+                    type="button"
+                    class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                    @click="resetPositionToRoot"
+                >
+                    Reset to root
+                </button>
+                <label class="text-sm flex items-center gap-2">
+                    Start
+                    <input
+                        v-model.number="positionStartFret"
+                        type="number"
+                        min="0"
+                        :max="fretCount - 1"
+                        class="w-20 rounded-md border bg-transparent px-2 py-1"
+                    />
+                </label>
+                <label class="text-sm flex items-center gap-2">
+                    Span
+                    <input
+                        v-model.number="positionSpan"
+                        type="number"
+                        min="1"
+                        :max="fretCount"
+                        class="w-20 rounded-md border bg-transparent px-2 py-1"
+                    />
+                </label>
+                <span class="text-sm text-slate-500 dark:text-slate-300">
+                    {{ positionSummary }}
+                </span>
+            </template>
         </div>
 
         <Label class="mb-4">Diatonic Chords</Label>

@@ -17,6 +17,9 @@ const props = withDefaults(
         highlight?: Highlight[];
         shapeFrets?: number[];
         shapeActive?: boolean;
+        viewMode?: "full" | "3nps" | "position";
+        positionStartFret?: number;
+        positionSpan?: number;
         degrees?: Record<string, string>;
         showDegrees?: boolean | string;
         showRest?: boolean | string;
@@ -29,6 +32,9 @@ const props = withDefaults(
         highlight: () => [],
         shapeFrets: () => [],
         shapeActive: false,
+        viewMode: "full",
+        positionStartFret: 0,
+        positionSpan: 5,
         degrees: () => ({}),
         showDegrees: false,
         showRest: false,
@@ -42,24 +48,29 @@ const highlightNotes = computed(() => props.highlight.map((h) => h.note));
 const notes = computed(() => {
     let octave = props.startOctave;
     const chordShapeOnlyMode = Boolean(props.chordRoot) && props.shapeActive;
+    const positionEndFret = props.positionStartFret + props.positionSpan - 1;
+    const isPositionMode = props.viewMode === "position";
+
     const notesArr = Array.from({ length: props.frets }, (_, i) => {
         const note = getNoteByOffset(props.start, i);
         if (note === "C" && i !== 0) octave++;
         const highlightIdx = highlightNotes.value.indexOf(note);
         const isShapeFret = props.shapeFrets.includes(i);
+        const inActivePosition = i >= props.positionStartFret && i <= positionEndFret;
+        const highlightInCurrentView = isPositionMode ? inActivePosition : true;
         return {
             name: note,
             octave,
             highlight: props.chordRoot
                 ? chordShapeOnlyMode
-                  ? Boolean(props.chordNotes[note]) && isShapeFret
-                  : Boolean(props.chordNotes[note])
+                  ? Boolean(props.chordNotes[note]) && isShapeFret && highlightInCurrentView
+                  : Boolean(props.chordNotes[note]) && highlightInCurrentView
                 : props.shapeActive
-                  ? highlightNotes.value.includes(note) && isShapeFret
-                  : highlightNotes.value.includes(note),
-            root: props.chordRoot
-                ? note === props.chordRoot
-                : note === props.root,
+                  ? highlightNotes.value.includes(note) && isShapeFret && highlightInCurrentView
+                  : highlightNotes.value.includes(note) && highlightInCurrentView,
+            root:
+                (props.chordRoot ? note === props.chordRoot : note === props.root) &&
+                highlightInCurrentView,
             degree:
                 highlightIdx >= 0
                     ? (props.highlight[highlightIdx].degree ?? false)
