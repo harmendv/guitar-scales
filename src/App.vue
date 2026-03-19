@@ -37,6 +37,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ChordButton } from "@/components/ui/chord-button";
+import { Button } from "@/components/ui/button";
 
 // URL search params (reactive)
 const params = useUrlSearchParams("history");
@@ -416,24 +417,22 @@ function onDeleteCustomTuning(id?: string) {
                     </SelectItem>
                 </SelectContent>
             </Select>
-            <button
-                type="button"
-                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
+            <Button
+                variant="outline"
                 v-if="show3nps"
                 :disabled="!threeNpsShapes.length"
                 @click="prev3npsShape"
             >
                 Prev Shape
-            </button>
-            <button
-                type="button"
-                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
+            </Button>
+            <Button
+                variant="outline"
                 v-if="show3nps"
                 :disabled="!threeNpsShapes.length"
                 @click="next3npsShape"
             >
                 Next Shape
-            </button>
+            </Button>
             <span v-if="show3nps" class="text-sm text-slate-500 dark:text-slate-300">
                 {{
                     threeNpsShapes.length
@@ -442,27 +441,24 @@ function onDeleteCustomTuning(id?: string) {
                 }}
             </span>
             <template v-if="showPosition">
-                <button
-                    type="button"
-                    class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                <Button
+                    variant="outline"
                     @click="prevPosition"
                 >
                     Prev Position
-                </button>
-                <button
-                    type="button"
-                    class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                </Button>
+                <Button
+                    variant="outline"
                     @click="nextPosition"
                 >
                     Next Position
-                </button>
-                <button
-                    type="button"
-                    class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                </Button>
+                <Button
+                    variant="outline"
                     @click="resetPositionToRoot"
                 >
                     Reset to root
-                </button>
+                </Button>
                 <label class="text-sm flex items-center gap-2">
                     Start
                     <input
@@ -607,25 +603,25 @@ function onDeleteCustomTuning(id?: string) {
                             </SelectItem>
                         </SelectContent>
                     </Select>
-                    <button
-                        type="button"
-                        class="rounded-md border p-2 text-sm"
+                    <Button
+                        variant="outline"
+                        size="icon"
                         title="Create custom tuning"
                         aria-label="Create custom tuning"
                         @click="openCreateCustomTuning"
                     >
                         <Plus :size="16" />
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-md border p-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
                         :disabled="!canEditSelectedTuning"
                         title="Edit selected custom tuning"
                         aria-label="Edit selected custom tuning"
                         @click="openEditCustomTuning"
                     >
                         <Pencil :size="16" />
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

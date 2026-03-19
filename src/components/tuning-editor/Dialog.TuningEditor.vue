@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import { Plus } from "lucide-vue-next";
 import { notes } from "@/composables/useNotes";
 import { isValidTuning, type InstrumentString } from "@/composables/useTunings";
+import { Button } from "@/components/ui/button";
 
 const MIN_STRINGS = 1;
 const MAX_STRINGS = 12;
@@ -123,13 +124,13 @@ function onSave() {
         >
             <div class="mb-3 flex items-center justify-between">
                 <h3 class="text-base font-semibold">{{ dialogTitle }}</h3>
-                <button
-                    type="button"
-                    class="rounded-md border px-2 py-1.5 text-xs"
+                <Button
+                    variant="outline"
+                    size="sm"
                     @click="$emit('cancel')"
                 >
                     Close
-                </button>
+                </Button>
             </div>
 
             <div class="mb-3">
@@ -144,16 +145,16 @@ function onSave() {
 
             <div class="flex items-center justify-between mb-2">
                 <label class="text-sm font-medium">Strings</label>
-                <button
-                    type="button"
-                    class="rounded-md border px-2 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                <Button
+                    variant="outline"
+                    size="icon-sm"
                     :disabled="!canAddString"
                     title="Add string"
                     aria-label="Add string"
                     @click="addString"
                 >
                     <Plus :size="16" />
-                </button>
+                </Button>
             </div>
 
             <div class="space-y-2 mb-3 max-h-[45vh] overflow-y-auto pr-1">
@@ -180,43 +181,39 @@ function onSave() {
                         @input="updateOctave(index, ($event.target as HTMLInputElement).value)"
                     />
 
-                    <button
-                        type="button"
-                        class="rounded-md border px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    <Button
+                        variant="outline"
+                        size="sm"
                         :disabled="draft.data.length <= MIN_STRINGS"
                         @click="removeString(index)"
                     >
                         Remove
-                    </button>
+                    </Button>
                 </div>
             </div>
 
             <p v-if="validationError" class="text-sm text-red-600 mb-3">{{ validationError }}</p>
 
             <div class="flex items-center gap-2">
-                <button
-                    type="button"
-                    class="rounded-md border px-3 py-2 text-sm"
+                <Button
+                    variant="outline"
                     @click="$emit('cancel')"
                 >
                     Cancel
-                </button>
-                <button
-                    type="button"
-                    class="rounded-md border px-3 py-2 text-sm bg-slate-900 text-slate-100 dark:bg-slate-100 dark:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                </Button>
+                <Button
                     :disabled="Boolean(validationError)"
                     @click="onSave"
                 >
                     Save tuning
-                </button>
-                <button
+                </Button>
+                <Button
                     v-if="showDelete"
-                    type="button"
-                    class="rounded-md border px-3 py-2 text-sm text-red-600"
+                    variant="destructive"
                     @click="$emit('delete', draft.id)"
                 >
                     Delete
-                </button>
+                </Button>
             </div>
         </div>
     </div>
