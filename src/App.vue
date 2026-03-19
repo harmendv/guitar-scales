@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
+import { Pencil, Plus } from "lucide-vue-next";
 import { scales, scalesFlatMap } from "@/composables/useScales";
-import { tunings } from "@/composables/useTunings";
 import { notes as baseNotes, getScaleNotes } from "@/composables/useNotes";
 import {
     chordsByPrimaryAbbreviation,
@@ -11,8 +11,16 @@ import {
     useDiatonicChords,
 } from "@/composables/useChords";
 import { use3nps } from "@/composables/use3nps";
+import { useCustomTunings } from "@/composables/useCustomTunings";
+import {
+    builtInTunings,
+    deserializeTuning,
+    serializeTuning,
+    type InstrumentString,
+} from "@/composables/useTunings";
 import { Fretboard } from "@/components/ui/fretboard";
 import { Logo } from "@/components/ui/logo";
+import DialogTuningEditor from "@/components/tuning-editor/Dialog.TuningEditor.vue";
 
 import {
     Select,
@@ -27,6 +35,14 @@ import { ChordButton } from "@/components/ui/chord-button";
 
 // URL search params (reactive)
 const params = useUrlSearchParams("history");
+const {
+    allTunings,
+    saveTuning,
+    deleteTuning,
+    getTuningById,
+} = useCustomTunings();
+
+const defaultTuning = builtInTunings[0];
 
 const note = ref<string>((params.note as string) || "C");
 const scale = ref<string>((params.scale as string) || "major");
@@ -34,10 +50,49 @@ const mode = ref<number>(Number.parseInt(params.mode as string, 10) || 1);
 const chord = ref<number | null>(
     params.chord ? Number.parseInt(params.chord as string, 10) : null
 );
-// Find initial tuning object by value, fallback to default
-const initialTuning =
-    tunings.find((t) => t.value === params.tuning) || tunings[0];
-const tuning = ref(initialTuning);
+
+function resolveInitialTuningId(): string {
+    const builtinFromLegacyParam = builtInTunings.find(
+        (tuning) => tuning.value === params.tuning
+    );
+    if (builtinFromLegacyParam) return builtinFromLegacyParam.id;
+
+    if (typeof params.tuning === "string") {
+        const byId = getTuningById(params.tuning);
+        if (byId) return byId.id;
+    }
+
+    const fromUrl = typeof params.tuningData === "string"
+        ? deserializeTuning(params.tuningData)
+        : null;
+    if (!fromUrl) return defaultTuning.id;
+
+    const saved = saveTuning({
+        label: (params.tuningLabel as string) || fromUrl.label || "Shared custom tuning",
+        data: fromUrl.data,
+    });
+    return saved?.id || defaultTuning.id;
+}
+
+const selectedTuningId = ref<string>(resolveInitialTuningId());
+const tuning = computed(
+    () => getTuningById(selectedTuningId.value) || defaultTuning
+);
+
+const isEditingCustomTuning = ref(false);
+const tuningEditorMode = ref<"create" | "edit">("create");
+const draftTuning = ref<{
+    id?: string;
+    label: string;
+    data: InstrumentString[];
+}>({
+    label: "Custom tuning",
+    data: tuning.value.data.map((stringData) => ({
+        note: stringData.note,
+        octave: stringData.octave,
+    })),
+});
+
 const noteNames = ref<string>((params.noteNames as string) || "notes");
 const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
 const show3nps = ref<boolean>((params.show3nps as string) === "1");
@@ -72,6 +127,11 @@ const modeOptions = computed(() => {
     );
     return opts;
 });
+const tuningOptions = computed(() => allTunings.value);
+const canEditSelectedTuning = computed(() => tuning.value.source === "custom");
+const isEditingExistingCustomTuning = computed(
+    () => Boolean(draftTuning.value.id) && tuning.value.source === "custom"
+);
 
 const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(scale.value));
 
@@ -145,7 +205,6 @@ watch(mode, (v) => {
     params.mode = v as any;
 });
 watch(chord, (v) => (params.chord = v as any));
-watch(tuning, (v) => (params.tuning = v.value)); // store kebab-case value
 watch(noteNames, (v) => (params.noteNames = v));
 watch(noteVisibility, (v) => (params.noteVisibility = v));
 watch(show3nps, (v) => (params.show3nps = v ? "1" : "0"));
@@ -159,6 +218,25 @@ watch(threeNpsShapes, (shapes) => {
         threeNpsShapeIndex.value = shapes.length - 1;
     }
 });
+watch(
+    tuning,
+    (activeTuning) => {
+        if (activeTuning.source === "builtin") {
+            params.tuning = activeTuning.value;
+            delete params.tuningData;
+            delete params.tuningLabel;
+            return;
+        }
+
+        params.tuning = "custom";
+        params.tuningData = serializeTuning({
+            label: activeTuning.label,
+            data: activeTuning.data,
+        });
+        params.tuningLabel = activeTuning.label;
+    },
+    { immediate: true, deep: true }
+);
 
 function onClickChord(index: number) {
     if (chord.value === index + 1) {
@@ -179,6 +257,53 @@ function prev3npsShape() {
     threeNpsShapeIndex.value =
         (threeNpsShapeIndex.value - 1 + threeNpsShapes.value.length) %
         threeNpsShapes.value.length;
+}
+
+function openCreateCustomTuning() {
+    tuningEditorMode.value = "create";
+    draftTuning.value = {
+        label: `${tuning.value.label} custom`,
+        data: tuning.value.data.map((stringData) => ({
+            note: stringData.note,
+            octave: stringData.octave,
+        })),
+    };
+    isEditingCustomTuning.value = true;
+}
+
+function openEditCustomTuning() {
+    if (tuning.value.source !== "custom") return;
+    tuningEditorMode.value = "edit";
+    draftTuning.value = {
+        id: tuning.value.id,
+        label: tuning.value.label,
+        data: tuning.value.data.map((stringData) => ({
+            note: stringData.note,
+            octave: stringData.octave,
+        })),
+    };
+    isEditingCustomTuning.value = true;
+}
+
+function onSaveCustomTuning(next: {
+    id?: string;
+    label: string;
+    data: InstrumentString[];
+}) {
+    const saved = saveTuning(next);
+    if (!saved) return;
+    selectedTuningId.value = saved.id;
+    isEditingCustomTuning.value = false;
+}
+
+function onDeleteCustomTuning(id?: string) {
+    if (!id) return;
+    const deleted = deleteTuning(id);
+    if (!deleted) return;
+    if (selectedTuningId.value === id) {
+        selectedTuningId.value = defaultTuning.id;
+    }
+    isEditingCustomTuning.value = false;
 }
 </script>
 
@@ -247,7 +372,7 @@ function prev3npsShape() {
             />
         </div>
 
-        <div class="mb-2 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div class="mb-2 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <Label class="mb-4">Root</Label>
                 <Select v-model="note">
@@ -335,22 +460,56 @@ function prev3npsShape() {
             </div>
             <div>
                 <Label class="mb-4">Tuning</Label>
-                <Select v-model="tuning">
-                    <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Make a selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in tunings"
-                            :value="option"
-                            :key="option.value"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
+                <div class="flex items-center gap-2">
+                    <Select v-model="selectedTuningId">
+                        <SelectTrigger class="w-full">
+                            <SelectValue placeholder="Make a selection" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem
+                                v-for="option in tuningOptions"
+                                :value="option.id"
+                                :key="option.id"
+                            >
+                                {{
+                                    option.source === "custom"
+                                        ? `Custom: ${option.label}`
+                                        : option.label
+                                }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <button
+                        type="button"
+                        class="rounded-md border p-2 text-sm"
+                        title="Create custom tuning"
+                        aria-label="Create custom tuning"
+                        @click="openCreateCustomTuning"
+                    >
+                        <Plus :size="16" />
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-md border p-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        :disabled="!canEditSelectedTuning"
+                        title="Edit selected custom tuning"
+                        aria-label="Edit selected custom tuning"
+                        @click="openEditCustomTuning"
+                    >
+                        <Pencil :size="16" />
+                    </button>
+                </div>
             </div>
         </div>
+        <DialogTuningEditor
+            v-if="isEditingCustomTuning"
+            :model-value="draftTuning"
+            :show-delete="isEditingExistingCustomTuning"
+            :mode="tuningEditorMode"
+            @save="onSaveCustomTuning"
+            @cancel="isEditingCustomTuning = false"
+            @delete="onDeleteCustomTuning"
+        />
 
         <div class="flex items-center justify-center flex-col mt-10">
             <Logo></Logo>
