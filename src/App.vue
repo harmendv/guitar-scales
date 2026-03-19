@@ -101,7 +101,17 @@ const draftTuning = ref<{
 
 const noteNames = ref<string>((params.noteNames as string) || "notes");
 const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
+type ContentMode = "scale" | "arpeggio";
 type FretboardViewMode = "full" | "3nps" | "position";
+const contentModeParam = params.contentMode as string | undefined;
+const contentMode = ref<ContentMode>(
+    contentModeParam === "arpeggio" ? "arpeggio" : "scale"
+);
+const arpeggioToneCountParam = Number.parseInt(
+    params.arpeggioToneCount as string,
+    10
+);
+const arpeggioToneCount = ref<3 | 4>(arpeggioToneCountParam === 3 ? 3 : 4);
 const legacyShow3nps = (params.show3nps as string) === "1";
 const viewModeParam = params.viewMode as string | undefined;
 const viewMode = ref<FretboardViewMode>(
@@ -134,6 +144,14 @@ const noteNamesOptions = [
 const noteVisibilityOptions = [
     { label: "All Notes", value: "all" },
     { label: "Only Scale Notes", value: "only-scale" },
+];
+const contentModeOptions: { label: string; value: ContentMode }[] = [
+    { label: "Scale", value: "scale" },
+    { label: "Arpeggio", value: "arpeggio" },
+];
+const arpeggioToneCountOptions: { label: string; value: 3 | 4 }[] = [
+    { label: "Triad", value: 3 },
+    { label: "7th", value: 4 },
 ];
 
 // Derived option lists
@@ -188,7 +206,10 @@ const chordNotes = computed(() =>
         scaleNotes.value,
         chordIntervals.value,
         selectedScaleIndex.value,
-        scales
+        scales,
+        {
+            toneCount: arpeggioToneCount.value,
+        }
     )
 );
 const { shapes: threeNpsShapes } = use3nps(
@@ -210,6 +231,21 @@ const positionSummary = computed(
 );
 const show3nps = computed(() => viewMode.value === "3nps");
 const showPosition = computed(() => viewMode.value === "position");
+const isArpeggioMode = computed(() => contentMode.value === "arpeggio");
+const shouldShowChordTones = computed(
+    () =>
+        chord.value != null &&
+        (isArpeggioMode.value || show3nps.value || showPosition.value)
+);
+const activeFretboardScaleNotes = computed(() =>
+    isArpeggioMode.value && chord.value != null ? [] : scaleNotes.value
+);
+const activeFretboardChordRoot = computed(() =>
+    shouldShowChordTones.value ? chordRoot.value : undefined
+);
+const activeFretboardChordNotes = computed(() =>
+    shouldShowChordTones.value ? chordNotes.value : {}
+);
 
 const activeThreeNpsShape = computed<number[][]>(() => {
     if (!threeNpsShapes.value.length) return [];
@@ -225,6 +261,9 @@ const title = computed(() => {
     }
     if (chord.value) {
         t += ` / chord: ${chordRoot.value ?? ""}${chordExtension.value ?? ""}`;
+        if (isArpeggioMode.value) {
+            t += ` / ${arpeggioToneCount.value === 3 ? "triad" : "7th"}`;
+        }
     }
     return t;
 });
@@ -244,12 +283,23 @@ watch(mode, (v) => {
     chord.value = null;
     params.mode = v as any;
 });
-watch(chord, (v) => (params.chord = v as any));
 watch(noteNames, (v) => (params.noteNames = v));
 watch(noteVisibility, (v) => (params.noteVisibility = v));
+watch(contentMode, (v) => {
+    params.contentMode = v;
+    if (v === "arpeggio" && chord.value == null && chords.value.length) {
+        chord.value = 1;
+    }
+});
+watch(arpeggioToneCount, (v) => (params.arpeggioToneCount = String(v)));
 watch(viewMode, (v) => {
     params.viewMode = v;
     params.show3nps = v === "3nps" ? "1" : "0";
+});
+watch(chord, (v) => (params.chord = v as any));
+watch([isArpeggioMode, chords], ([arpeggioActive, diatonicChords]) => {
+    if (!arpeggioActive || chord.value != null || !diatonicChords.length) return;
+    chord.value = 1;
 });
 watch(safePositionStartFret, (v) => {
     if (positionStartFret.value !== v) {
@@ -387,15 +437,15 @@ function onDeleteCustomTuning(id?: string) {
         <Label class="mb-4">{{ title }}</Label>
         <Fretboard
             :strings="tuning.data"
-            :scale-notes="scaleNotes"
+            :scale-notes="activeFretboardScaleNotes"
             :frets="fretCount"
             :shape-active="show3nps"
             :shape-frets-by-string="activeThreeNpsShape"
             :view-mode="viewMode"
             :position-start-fret="safePositionStartFret"
             :position-span="safePositionSpan"
-            :chord-root="chordRoot"
-            :chord-notes="chordNotes"
+            :chord-root="activeFretboardChordRoot"
+            :chord-notes="activeFretboardChordNotes"
             :show-degrees="noteNames === 'degrees'"
             :root="note"
             :show-rest="noteVisibility === 'all'"
@@ -417,6 +467,36 @@ function onDeleteCustomTuning(id?: string) {
                     </SelectItem>
                 </SelectContent>
             </Select>
+            <Select v-model="contentMode">
+                <SelectTrigger class="w-40">
+                    <SelectValue placeholder="Content mode" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem
+                        v-for="option in contentModeOptions"
+                        :key="option.value"
+                        :value="option.value"
+                    >
+                        {{ option.label }}
+                    </SelectItem>
+                </SelectContent>
+            </Select>
+            <template v-if="isArpeggioMode">
+                <Select v-model.number="arpeggioToneCount">
+                    <SelectTrigger class="w-32">
+                        <SelectValue placeholder="Arpeggio type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem
+                            v-for="option in arpeggioToneCountOptions"
+                            :key="option.value"
+                            :value="option.value"
+                        >
+                            {{ option.label }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
+            </template>
             <Button
                 variant="outline"
                 v-if="show3nps"
@@ -485,7 +565,9 @@ function onDeleteCustomTuning(id?: string) {
             </template>
         </div>
 
-        <Label class="mb-4">Diatonic Chords</Label>
+        <Label class="mb-4">
+            {{ isArpeggioMode ? "Arpeggio Degree (Diatonic Chords)" : "Diatonic Chords" }}
+        </Label>
         <div class="grid grid-cols-4 md:flex w-full gap-6 mb-8">
             <ChordButton
                 v-for="(chord, index) in chords"
