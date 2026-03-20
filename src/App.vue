@@ -11,6 +11,7 @@ import { useAppState } from "@/composables/useAppState";
 import { useFretboardState } from "@/composables/useFretboardState";
 
 const {
+    accidentalPreference,
     canEditSelectedTuning,
     closeCustomTuningEditor,
     draftTuning,
@@ -42,8 +43,9 @@ const {
 const {
     activeChord,
     activeFretboardChordNotes,
-    activeFretboardChordRoot,
+    accidentalPreferenceOptions,
     activeThreeNpsShape,
+    chordRootPitchClass,
     chords,
     fretCount,
     maxPositionStartFret,
@@ -56,7 +58,9 @@ const {
     notesOptions,
     prev3npsShape,
     prevPosition,
+    resolvedAccidentalPreference,
     resetPositionToRoot,
+    rootPitchClass,
     safePositionSpan,
     safePositionStartFret,
     scaleNotes,
@@ -67,6 +71,7 @@ const {
     toggleChord,
     viewModeOptions,
 } = useFretboardState({
+    accidentalPreference,
     chord,
     mode,
     note,
@@ -95,18 +100,21 @@ const {
             :view-mode="viewMode"
             :position-start-fret="safePositionStartFret"
             :position-span="safePositionSpan"
-            :chord-root="activeFretboardChordRoot"
+            :note-preference="resolvedAccidentalPreference"
+            :chord-root-pitch-class="chordRootPitchClass"
             :chord-notes="activeFretboardChordNotes"
             :show-degrees="noteNames === 'degrees'"
-            :root="note"
+            :root-pitch-class="rootPitchClass"
             :show-rest="noteVisibility === 'all'"
             class="mb-8"
         />
 
         <ViewModeControls
+            v-model:accidental-preference="accidentalPreference"
             v-model:view-mode="viewMode"
             v-model:position-start-fret="positionStartFret"
             v-model:position-span="positionSpan"
+            :accidental-preference-options="accidentalPreferenceOptions"
             :fret-count="fretCount"
             :max-position-start-fret="maxPositionStartFret"
             :min-position-start-fret="minPositionStartFret"

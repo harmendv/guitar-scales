@@ -6,9 +6,13 @@ export interface Note {
 }
 
 export interface ScaleNote {
+    pitchClass: number;
     note: string;
     degree: string;
 }
+
+export type AccidentalPreference = "auto" | "sharp" | "flat";
+export type ResolvedAccidentalPreference = Exclude<AccidentalPreference, "auto">;
 
 const CANONICAL_NOTE_NAMES = [
     "A",
@@ -58,14 +62,58 @@ function normalizeNoteName(note: string): string {
     return note.trim().replaceAll("♭", "b").toUpperCase();
 }
 
-function getPitchClass(note: string): number | null {
+export function getPitchClass(note: string): number | null {
     if (typeof note !== "string") return null;
     const normalized = normalizeNoteName(note);
     return noteSemitoneMap[normalized] ?? null;
 }
 
-function formatPitchClass(pitchClass: number): string {
-    return CANONICAL_NOTE_NAMES[modulo(pitchClass - 9, CANONICAL_NOTE_NAMES.length)];
+const SHARP_NOTE_NAMES = [
+    "C",
+    "C♯",
+    "D",
+    "D♯",
+    "E",
+    "F",
+    "F♯",
+    "G",
+    "G♯",
+    "A",
+    "A♯",
+    "B",
+] as const;
+
+const FLAT_NOTE_NAMES = [
+    "C",
+    "Db",
+    "D",
+    "Eb",
+    "E",
+    "F",
+    "Gb",
+    "G",
+    "Ab",
+    "A",
+    "Bb",
+    "B",
+] as const;
+
+export function resolveAccidentalPreference(
+    note: string,
+    preference: AccidentalPreference = "auto"
+): ResolvedAccidentalPreference {
+    if (preference !== "auto") return preference;
+    return note.includes("b") || note.includes("♭") ? "flat" : "sharp";
+}
+
+export function formatPitchClass(
+    pitchClass: number,
+    preference: ResolvedAccidentalPreference = "sharp"
+): string {
+    const normalizedPitchClass = modulo(pitchClass, 12);
+    return preference === "flat"
+        ? FLAT_NOTE_NAMES[normalizedPitchClass]
+        : SHARP_NOTE_NAMES[normalizedPitchClass];
 }
 
 export const notes: Note[] = CANONICAL_NOTE_NAMES.map((name, index) => ({
@@ -81,14 +129,26 @@ export function notesFlatMap(): string[] {
     return [...CANONICAL_NOTE_NAMES];
 }
 
-export function getNoteByOffset(start = "C", offset = 0): string {
+export function getNoteByOffset(
+    start = "C",
+    offset = 0,
+    preference: AccidentalPreference = "auto"
+): string {
     const startPitchClass = getPitchClass(start);
     if (startPitchClass == null) return "";
 
-    return formatPitchClass(startPitchClass + Math.trunc(offset));
+    return formatPitchClass(
+        startPitchClass + Math.trunc(offset),
+        resolveAccidentalPreference(start, preference)
+    );
 }
 
-export function getScaleNotes(scaleIndex: number, mode: number, note: string): ScaleNote[] {
+export function getScaleNotes(
+    scaleIndex: number,
+    mode: number,
+    note: string,
+    preference: AccidentalPreference = "auto"
+): ScaleNote[] {
     const scale = scales[scaleIndex];
     if (!scale) return [];
 
@@ -98,7 +158,8 @@ export function getScaleNotes(scaleIndex: number, mode: number, note: string): S
     const modeOffset = modeEntry.chromatic - 1;
 
     return scale.formula.map((entry) => ({
-        note: getNoteByOffset(note, entry.chromatic - 1 + (12 - modeOffset)),
+        pitchClass: modulo(getPitchClass(note)! + entry.chromatic - 1 + (12 - modeOffset), 12),
+        note: getNoteByOffset(note, entry.chromatic - 1 + (12 - modeOffset), preference),
         degree: entry.degree,
     }));
 }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -10,6 +11,7 @@ import {
 import type { FretboardViewMode } from "@/composables/useAppState";
 
 defineProps<{
+    accidentalPreferenceOptions: { label: string; value: string }[];
     fretCount: number;
     maxPositionStartFret: number;
     minPositionStartFret: number;
@@ -20,6 +22,7 @@ defineProps<{
     viewModeOptions: { label: string; value: FretboardViewMode }[];
 }>();
 
+const accidentalPreference = defineModel<string>("accidentalPreference", { required: true });
 const viewMode = defineModel<FretboardViewMode>("viewMode", { required: true });
 const positionStartFret = defineModel<number>("positionStartFret", { required: true });
 const positionSpanModel = defineModel<number>("positionSpan", { required: true });
@@ -34,21 +37,41 @@ defineEmits<{
 </script>
 
 <template>
-    <div class="flex flex-wrap items-center gap-3 mb-8">
-        <Select v-model="viewMode">
-            <SelectTrigger class="w-40">
-                <SelectValue placeholder="View mode" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem
-                    v-for="option in viewModeOptions"
-                    :key="option.value"
-                    :value="option.value"
-                >
-                    {{ option.label }}
-                </SelectItem>
-            </SelectContent>
-        </Select>
+    <div class="flex flex-wrap items-end gap-3 mb-8">
+        <div class="flex flex-col gap-2">
+            <Label>Accidentals</Label>
+            <Select v-model="accidentalPreference">
+                <SelectTrigger class="w-32">
+                    <SelectValue placeholder="Accidentals" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem
+                        v-for="option in accidentalPreferenceOptions"
+                        :key="option.value"
+                        :value="option.value"
+                    >
+                        {{ option.label }}
+                    </SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
+        <div class="flex flex-col gap-2">
+            <Label>View</Label>
+            <Select v-model="viewMode">
+                <SelectTrigger class="w-40">
+                    <SelectValue placeholder="View mode" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem
+                        v-for="option in viewModeOptions"
+                        :key="option.value"
+                        :value="option.value"
+                    >
+                        {{ option.label }}
+                    </SelectItem>
+                </SelectContent>
+            </Select>
+        </div>
         <Button
             v-if="show3nps"
             variant="outline"

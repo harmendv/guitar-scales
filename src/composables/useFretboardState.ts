@@ -1,6 +1,13 @@
 import { computed, watch, type ComputedRef, type Ref } from "vue";
 import { scales, scalesFlatMap } from "@/composables/useScales";
-import { notes as baseNotes, getNoteByOffset, getScaleNotes } from "@/composables/useNotes";
+import {
+    notes as baseNotes,
+    getNoteByOffset,
+    getPitchClass,
+    getScaleNotes,
+    resolveAccidentalPreference,
+    type AccidentalPreference,
+} from "@/composables/useNotes";
 import {
     chordsByPrimaryAbbreviation,
     getChordIntervals,
@@ -14,6 +21,7 @@ import type { Tuning } from "@/composables/useTunings";
 
 export function useFretboardState(input: {
     chord: Ref<number | null>;
+    accidentalPreference: Ref<AccidentalPreference>;
     note: Ref<string>;
     mode: Ref<number>;
     positionSpan: Ref<number>;
@@ -40,6 +48,14 @@ export function useFretboardState(input: {
         { label: "All Notes", value: "all" },
         { label: "Only Scale Notes", value: "only-scale" },
     ];
+    const accidentalPreferenceOptions = [
+        { label: "Auto", value: "auto" },
+        { label: "Sharps", value: "sharp" },
+        { label: "Flats", value: "flat" },
+    ];
+    const resolvedAccidentalPreference = computed(() =>
+        resolveAccidentalPreference(input.note.value, input.accidentalPreference.value)
+    );
 
     const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(input.scale.value));
     const scalesOptions = computed(() =>
@@ -57,7 +73,12 @@ export function useFretboardState(input: {
         }));
     });
     const scaleNotes = computed(() =>
-        getScaleNotes(selectedScaleIndex.value, input.mode.value, input.note.value)
+        getScaleNotes(
+            selectedScaleIndex.value,
+            input.mode.value,
+            input.note.value,
+            input.accidentalPreference.value
+        )
     );
     const chords = useDiatonicChords(scaleNotes, selectedScaleIndex, scales);
     const activeChord = computed<number | undefined>(() =>
@@ -65,6 +86,10 @@ export function useFretboardState(input: {
     );
     const chordRoot = computed<string | number | undefined>(() =>
         input.chord.value ? chords.value[input.chord.value - 1]?.note : undefined
+    );
+    const rootPitchClass = computed(() => getPitchClass(input.note.value));
+    const chordRootPitchClass = computed(() =>
+        chordRoot.value == null ? null : getPitchClass(String(chordRoot.value))
     );
     const chordExtension = computed<string | number | undefined>(() =>
         input.chord.value ? chords.value[input.chord.value - 1]?.chord : undefined
@@ -180,7 +205,11 @@ export function useFretboardState(input: {
         const lowestString = input.tuning.value.data[0];
         if (!lowestString) return;
         for (let fret = 0; fret < fretCount; fret++) {
-            if (getNoteByOffset(lowestString.note, fret) === input.note.value) {
+            if (
+                getPitchClass(
+                    getNoteByOffset(lowestString.note, fret, resolvedAccidentalPreference.value)
+                ) === rootPitchClass.value
+            ) {
                 input.positionStartFret.value = fret;
                 return;
             }
@@ -193,10 +222,9 @@ export function useFretboardState(input: {
         activeFretboardChordNotes: computed(() =>
             input.chord.value == null ? {} : chordNotes.value
         ),
-        activeFretboardChordRoot: computed(() =>
-            input.chord.value == null ? undefined : chordRoot.value
-        ),
+        accidentalPreferenceOptions,
         activeThreeNpsShape,
+        chordRootPitchClass,
         chords,
         fretCount,
         maxPositionStartFret,
@@ -210,6 +238,8 @@ export function useFretboardState(input: {
         prev3npsShape,
         prevPosition,
         resetPositionToRoot,
+        resolvedAccidentalPreference,
+        rootPitchClass,
         safePositionSpan,
         safePositionStartFret,
         scaleNotes,

@@ -223,12 +223,12 @@ export function getChordNotes(
     chordToneIndexes.forEach((i, iterator) => {
         if (i >= scaleFormulaLength) {
             const refIndex = i - scaleFormulaLength;
-            chordTones[scaleNotes[refIndex].note] = {
+            chordTones[String(scaleNotes[refIndex].pitchClass)] = {
                 ...scaleNotes[refIndex],
                 interval: intervals[iterator],
             };
         } else {
-            chordTones[scaleNotes[i].note] = {
+            chordTones[String(scaleNotes[i].pitchClass)] = {
                 ...scaleNotes[i],
                 interval: intervals[iterator],
             };

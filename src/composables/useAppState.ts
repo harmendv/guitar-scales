@@ -1,6 +1,7 @@
 import { computed, ref, watch } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
 import { useCustomTunings } from "@/composables/useCustomTunings";
+import type { AccidentalPreference } from "@/composables/useNotes";
 import {
     builtInTunings,
     deserializeTuning,
@@ -28,6 +29,11 @@ export function useAppState() {
     );
     const noteNames = ref<string>((params.noteNames as string) || "notes");
     const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
+    const accidentalPreference = ref<AccidentalPreference>(
+        params.accidentals === "sharp" || params.accidentals === "flat"
+            ? params.accidentals
+            : "auto"
+    );
 
     const legacyShow3nps = (params.show3nps as string) === "1";
     const viewModeParam = params.viewMode as string | undefined;
@@ -113,6 +119,9 @@ export function useAppState() {
     });
     watch(noteVisibility, (value) => {
         params.noteVisibility = value;
+    });
+    watch(accidentalPreference, (value) => {
+        params.accidentals = value;
     });
     watch(viewMode, (value) => {
         params.viewMode = value;
@@ -217,6 +226,7 @@ export function useAppState() {
     return {
         chord,
         canEditSelectedTuning,
+        accidentalPreference,
         closeCustomTuningEditor,
         draftTuning,
         isEditingCustomTuning,
