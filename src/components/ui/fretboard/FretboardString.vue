@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { getNoteByOffset, playTone } from "@/composables/useNotes";
+import { playTone } from "@/composables/useAudio";
+import { getNoteByOffset } from "@/composables/useNotes";
 import { type ChordNotes } from "@/composables/useChords";
 import { cn } from "@/lib/utils";
 
