@@ -111,8 +111,9 @@ const viewMode = ref<FretboardViewMode>(
           ? "3nps"
           : "full"
 );
+const initialPositionStart = Number.parseInt(params.positionStart as string, 10);
 const positionStartFret = ref<number>(
-    Math.max(0, Number.parseInt(params.positionStart as string, 10) || 0)
+    Number.isFinite(initialPositionStart) ? initialPositionStart : 0
 );
 const positionSpan = ref<number>(
     Math.max(1, Number.parseInt(params.positionSpan as string, 10) || 5)
@@ -120,7 +121,7 @@ const positionSpan = ref<number>(
 const threeNpsShapeIndex = ref<number>(
     Math.max(0, (Number.parseInt(params.shape as string, 10) || 1) - 1)
 );
-const fretCount = 20;
+const fretCount = 22;
 const viewModeOptions: { label: string; value: FretboardViewMode }[] = [
     { label: "Full neck", value: "full" },
     { label: "3NPS", value: "3nps" },
@@ -197,16 +198,16 @@ const { shapes: threeNpsShapes } = use3nps(
     fretCount
 );
 const {
+    minStartFret: minPositionStartFret,
     safeStartFret: safePositionStartFret,
     safeSpan: safePositionSpan,
+    maxStartFret: maxPositionStartFret,
+    renderedSpan: renderedPositionSpan,
     endFret: positionEndFret,
 } = usePositionView(
     positionStartFret,
     positionSpan,
     computed(() => fretCount)
-);
-const positionSummary = computed(
-    () => `Frets ${safePositionStartFret.value}-${positionEndFret.value}`
 );
 const show3nps = computed(() => viewMode.value === "3nps");
 const showPosition = computed(() => viewMode.value === "position");
@@ -264,13 +265,13 @@ watch(safePositionStartFret, (v) => {
         positionStartFret.value = v;
     }
     params.positionStart = String(v);
-});
+}, { immediate: true });
 watch(safePositionSpan, (v) => {
     if (positionSpan.value !== v) {
         positionSpan.value = v;
     }
     params.positionSpan = String(v);
-});
+}, { immediate: true });
 watch(threeNpsShapeIndex, (v) => (params.shape = String(v + 1)));
 watch(threeNpsShapes, (shapes) => {
     if (!shapes.length) {
@@ -326,11 +327,24 @@ function prev3npsShape() {
 }
 
 function nextPosition() {
-    positionStartFret.value = safePositionStartFret.value + safePositionSpan.value;
+    if (
+        renderedPositionSpan.value < safePositionSpan.value &&
+        safePositionStartFret.value >= 0
+    ) return;
+    positionStartFret.value = Math.min(
+        safePositionStartFret.value + safePositionSpan.value,
+        maxPositionStartFret.value
+    );
 }
 
 function prevPosition() {
-    positionStartFret.value = safePositionStartFret.value - safePositionSpan.value;
+    if (renderedPositionSpan.value < safePositionSpan.value && safePositionStartFret.value < 0) {
+        return;
+    }
+    positionStartFret.value = Math.max(
+        safePositionStartFret.value - safePositionSpan.value,
+        minPositionStartFret.value
+    );
 }
 
 function resetPositionToRoot() {
@@ -444,13 +458,6 @@ function onDeleteCustomTuning(id?: string) {
             >
                 Next Shape
             </Button>
-            <span v-if="show3nps" class="text-sm text-slate-500 dark:text-slate-300">
-                {{
-                    threeNpsShapes.length
-                        ? `Shape ${threeNpsShapeIndex + 1} / ${threeNpsShapes.length}`
-                        : "No 3NPS shape for this scale/tuning"
-                }}
-            </span>
             <template v-if="showPosition">
                 <Button
                     variant="outline"
@@ -475,8 +482,8 @@ function onDeleteCustomTuning(id?: string) {
                     <input
                         v-model.number="positionStartFret"
                         type="number"
-                        min="0"
-                        :max="fretCount - 1"
+                        :min="minPositionStartFret"
+                        :max="maxPositionStartFret"
                         class="w-20 rounded-md border bg-transparent px-2 py-1"
                     />
                 </label>
@@ -490,9 +497,6 @@ function onDeleteCustomTuning(id?: string) {
                         class="w-20 rounded-md border bg-transparent px-2 py-1"
                     />
                 </label>
-                <span class="text-sm text-slate-500 dark:text-slate-300">
-                    {{ positionSummary }}
-                </span>
             </template>
         </div>
 
