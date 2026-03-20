@@ -1,7 +1,7 @@
 import { computed, watch, type ComputedRef, type Ref } from "vue";
 import { scales, scalesFlatMap } from "@/composables/useScales";
 import {
-    notes as baseNotes,
+    formatPitchClass,
     getNoteByOffset,
     getPitchClass,
     getScaleNotes,
@@ -62,7 +62,10 @@ export function useFretboardState(input: {
         scales.map((scale) => ({ label: scale.name, value: scale.slug }))
     );
     const notesOptions = computed(() =>
-        baseNotes.map((note) => ({ label: note.name, value: note.name }))
+        Array.from({ length: 12 }, (_, pitchClass) => {
+            const note = formatPitchClass(pitchClass, resolvedAccidentalPreference.value);
+            return { label: note, value: note };
+        })
     );
     const modeOptions = computed(() => {
         const index = selectedScaleIndex.value;
@@ -146,6 +149,15 @@ export function useFretboardState(input: {
     }, { immediate: true });
     watch(safePositionSpan, (value) => {
         input.syncPositionSpan(value);
+    }, { immediate: true });
+    watch(resolvedAccidentalPreference, (preference) => {
+        const pitchClass = getPitchClass(input.note.value);
+        if (pitchClass == null) return;
+
+        const formattedNote = formatPitchClass(pitchClass, preference);
+        if (formattedNote !== input.note.value) {
+            input.note.value = formattedNote;
+        }
     }, { immediate: true });
     watch(() => input.threeNpsShapeIndex.value, (value) => {
         input.syncShapeIndex(value);
