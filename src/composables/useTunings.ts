@@ -142,13 +142,13 @@ export const builtInTunings: Tuning[] = [
             { note: "A", octave: 2 },
             { note: "D", octave: 3 },
             { note: "F♯", octave: 3 },
-            { note: "B", octave: 2 },
+            { note: "B", octave: 3 },
         ],
         value: "b-standard",
     },
     {
-        id: "builtin-ukelele",
-        label: "Ukelele",
+        id: "builtin-ukulele",
+        label: "Ukulele",
         source: "builtin",
         data: [
             { note: "G", octave: 4 },
@@ -156,7 +156,7 @@ export const builtInTunings: Tuning[] = [
             { note: "E", octave: 4 },
             { note: "A", octave: 4 },
         ],
-        value: "ukelele",
+        value: "ukulele",
     },
 ];
 
