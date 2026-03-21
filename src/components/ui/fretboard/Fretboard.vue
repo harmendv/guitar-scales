@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { type ScaleNote } from "@/composables/useNotes"
+import { type ResolvedAccidentalPreference, type ScaleNote } from "@/composables/useNotes"
 import { type ChordNotes } from "@/composables/useChords";
 import FretboardString from "./FretboardString.vue";
 import FretboardNumber from "./FretboardNumber.vue";
@@ -17,10 +17,14 @@ const props = withDefaults(
         scaleNotes: ScaleNote[];
         shapeFretsByString?: number[][];
         shapeActive?: boolean;
+        viewMode?: "full" | "3nps" | "position";
+        positionStartFret?: number;
+        positionSpan?: number;
+        notePreference?: ResolvedAccidentalPreference;
         showDegrees: boolean | string;
         showRest: boolean | string;
-        root: string;
-        chordRoot: string | number | undefined;
+        rootPitchClass: number | null;
+        chordRootPitchClass: number | null;
         chordNotes: ChordNotes;
     }>(),
     {
@@ -36,9 +40,14 @@ const props = withDefaults(
         scaleNotes: () => [],
         shapeFretsByString: () => [],
         shapeActive: false,
+        viewMode: "full",
+        positionStartFret: 0,
+        positionSpan: 5,
+        notePreference: "sharp",
         showDegrees: false,
         showRest: false,
-        chordRoot: undefined,
+        rootPitchClass: null,
+        chordRootPitchClass: null,
         chordNotes: () => ({}),
     }
 );
@@ -66,9 +75,13 @@ const reversedShapeFretsByString = computed<number[][]>(() =>
                 :highlight="scaleNotes"
                 :shape-frets="reversedShapeFretsByString[index] || []"
                 :shape-active="shapeActive"
-                :chord-root="chordRoot"
+                :view-mode="viewMode"
+                :position-start-fret="positionStartFret"
+                :position-span="positionSpan"
+                :note-preference="notePreference"
+                :chord-root-pitch-class="chordRootPitchClass"
                 :chord-notes="chordNotes"
-                :root="root"
+                :root-pitch-class="rootPitchClass"
                 :show-degrees="showDegrees"
                 :show-rest="showRest"
             />

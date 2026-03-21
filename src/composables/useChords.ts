@@ -11,6 +11,10 @@ export interface Chord {
 
 export type ChordNotes = Record<string, ScaleNote & { interval?: string }>;
 
+export interface ArpeggioOptions {
+    toneCount: 3 | 4;
+}
+
 const chords: Chord[] = [
     {
         id: 1,
@@ -200,30 +204,33 @@ export function getChordNotes(
     scaleNotes: ScaleNote[],
     chordIntervals: string[] | null,
     selectedScaleIndex: number,
-    scales: Scale[]
+    scales: Scale[],
+    options: ArpeggioOptions = { toneCount: 4 }
 ): ChordNotes {
     if (!chord || !scaleNotes.length || !chordIntervals) return {};
     if (selectedScaleIndex < 0) return {};
     const scaleFormula = scales[selectedScaleIndex].formula;
     const scaleFormulaLength = scaleFormula.length;
     const chordTones: ChordNotes = {};
+    const toneCount = Math.min(options.toneCount, chordIntervals.length);
+    const intervals = chordIntervals.slice(0, toneCount);
     const chordToneIndexes = [
         chord - 1,
         chord - 1 + 2,
         chord - 1 + 4,
         scaleFormulaLength === 6 ? chord - 1 + 5 : chord - 1 + 6,
-    ];
+    ].slice(0, toneCount);
     chordToneIndexes.forEach((i, iterator) => {
         if (i >= scaleFormulaLength) {
             const refIndex = i - scaleFormulaLength;
-            chordTones[scaleNotes[refIndex].note] = {
+            chordTones[String(scaleNotes[refIndex].pitchClass)] = {
                 ...scaleNotes[refIndex],
-                interval: chordIntervals?.[iterator],
+                interval: intervals[iterator],
             };
         } else {
-            chordTones[scaleNotes[i].note] = {
+            chordTones[String(scaleNotes[i].pitchClass)] = {
                 ...scaleNotes[i],
-                interval: chordIntervals?.[iterator],
+                interval: intervals[iterator],
             };
         }
     });

@@ -1,5 +1,5 @@
 import { computed, type ComputedRef } from "vue";
-import { getNoteByOffset, type ScaleNote, noteSemitoneMap } from "@/composables/useNotes";
+import { getNoteByOffset, getPitchClass, type ScaleNote } from "@/composables/useNotes";
 
 interface InstrumentString {
     note: string;
@@ -31,7 +31,7 @@ function isConsecutiveDegree(
 }
 
 function noteToAbsoluteSemitone(note: string, octave: number): number {
-    const semitone = noteSemitoneMap[note];
+    const semitone = getPitchClass(note);
     if (semitone == null) return octave * 12;
     return octave * 12 + semitone;
 }

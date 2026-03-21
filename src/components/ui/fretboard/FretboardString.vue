@@ -1,27 +1,32 @@
 <script lang="ts" setup>
 import { computed } from "vue";
-import { getNoteByOffset, playTone } from "@/composables/useNotes";
+import { playTone } from "@/composables/useAudio";
+import {
+    getNoteByOffset,
+    getPitchClass,
+    type ResolvedAccidentalPreference,
+    type ScaleNote,
+} from "@/composables/useNotes";
 import { type ChordNotes } from "@/composables/useChords";
 import { cn } from "@/lib/utils";
-
-interface Highlight {
-    note: string;
-    degree?: string;
-}
 
 const props = withDefaults(
     defineProps<{
         start: string;
         startOctave: number;
         frets?: number;
-        highlight?: Highlight[];
+        highlight?: ScaleNote[];
         shapeFrets?: number[];
         shapeActive?: boolean;
+        viewMode?: "full" | "3nps" | "position";
+        positionStartFret?: number;
+        positionSpan?: number;
         degrees?: Record<string, string>;
+        notePreference?: ResolvedAccidentalPreference;
         showDegrees?: boolean | string;
         showRest?: boolean | string;
-        root: string;
-        chordRoot?: string | number | null;
+        rootPitchClass?: number | null;
+        chordRootPitchClass?: number | null;
         chordNotes?: ChordNotes;
     }>(),
     {
@@ -29,41 +34,61 @@ const props = withDefaults(
         highlight: () => [],
         shapeFrets: () => [],
         shapeActive: false,
+        viewMode: "full",
+        positionStartFret: 0,
+        positionSpan: 5,
         degrees: () => ({}),
+        notePreference: "sharp",
         showDegrees: false,
         showRest: false,
-        chordRoot: null,
+        rootPitchClass: null,
+        chordRootPitchClass: null,
         chordNotes: () => ({}),
     }
 );
 
-const highlightNotes = computed(() => props.highlight.map((h) => h.note));
+const highlightByPitchClass = computed(() => {
+    const map = new Map<number, ScaleNote>();
+    props.highlight.forEach((highlight) => {
+        map.set(highlight.pitchClass, highlight);
+    });
+    return map;
+});
 
 const notes = computed(() => {
     let octave = props.startOctave;
-    const chordShapeOnlyMode = Boolean(props.chordRoot) && props.shapeActive;
+    const chordShapeOnlyMode = props.chordRootPitchClass != null && props.shapeActive;
+    const positionEndFret = props.positionStartFret + props.positionSpan - 1;
+    const isPositionMode = props.viewMode === "position";
+
     const notesArr = Array.from({ length: props.frets }, (_, i) => {
-        const note = getNoteByOffset(props.start, i);
+        const note = getNoteByOffset(props.start, i, props.notePreference);
+        const pitchClass = getPitchClass(note);
         if (note === "C" && i !== 0) octave++;
-        const highlightIdx = highlightNotes.value.indexOf(note);
+        const highlightedNote = pitchClass == null
+            ? undefined
+            : highlightByPitchClass.value.get(pitchClass);
         const isShapeFret = props.shapeFrets.includes(i);
+        const inActivePosition = i >= props.positionStartFret && i <= positionEndFret;
+        const highlightInCurrentView = isPositionMode ? inActivePosition : true;
         return {
             name: note,
+            pitchClass,
             octave,
-            highlight: props.chordRoot
+            highlight: props.chordRootPitchClass != null && pitchClass != null
                 ? chordShapeOnlyMode
-                  ? Boolean(props.chordNotes[note]) && isShapeFret
-                  : Boolean(props.chordNotes[note])
+                  ? Boolean(props.chordNotes[String(pitchClass)]) && isShapeFret && highlightInCurrentView
+                  : Boolean(props.chordNotes[String(pitchClass)]) && highlightInCurrentView
                 : props.shapeActive
-                  ? highlightNotes.value.includes(note) && isShapeFret
-                  : highlightNotes.value.includes(note),
-            root: props.chordRoot
-                ? note === props.chordRoot
-                : note === props.root,
-            degree:
-                highlightIdx >= 0
-                    ? (props.highlight[highlightIdx].degree ?? false)
-                    : false,
+                  ? Boolean(highlightedNote) && isShapeFret && highlightInCurrentView
+                  : Boolean(highlightedNote) && highlightInCurrentView,
+            root:
+                pitchClass != null &&
+                (props.chordRootPitchClass != null
+                    ? pitchClass === props.chordRootPitchClass
+                    : pitchClass === props.rootPitchClass) &&
+                highlightInCurrentView,
+            degree: highlightedNote?.degree ?? false,
         };
     });
     return notesArr;
@@ -104,14 +129,14 @@ const notes = computed(() => {
                 >
                     <template
                         v-if="
-                            chordRoot &&
+                            chordRootPitchClass != null &&
                             showDegrees &&
-                            chordNotes[note.name]?.interval
+                            chordNotes[String(note.pitchClass)]?.interval
                         "
                     >
-                        {{ chordNotes[note.name].interval }}
+                        {{ chordNotes[String(note.pitchClass)].interval }}
                     </template>
-                    <template v-else-if="chordRoot">
+                    <template v-else-if="chordRootPitchClass != null">
                         {{ note.name }}
                     </template>
                     <template v-else-if="showDegrees && note.degree">

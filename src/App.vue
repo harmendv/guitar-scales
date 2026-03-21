@@ -1,371 +1,171 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-import { useUrlSearchParams } from "@vueuse/core";
-import { scales, scalesFlatMap } from "@/composables/useScales";
-import { tunings } from "@/composables/useTunings";
-import { notes as baseNotes, getScaleNotes } from "@/composables/useNotes";
-import {
-    chordsByPrimaryAbbreviation,
-    getChordIntervals,
-    getChordNotes,
-    useDiatonicChords,
-} from "@/composables/useChords";
-import { use3nps } from "@/composables/use3nps";
-import { Fretboard } from "@/components/ui/fretboard";
-import { Logo } from "@/components/ui/logo";
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { ChordButton } from "@/components/ui/chord-button";
+import { Fretboard } from "@/components/ui/fretboard";
+import DialogTuningEditor from "@/components/tuning-editor/Dialog.TuningEditor.vue";
+import AppFooter from "@/components/app/AppFooter.vue";
+import ChordPanel from "@/components/app/ChordPanel.vue";
+import ScaleControls from "@/components/app/ScaleControls.vue";
+import TuningControls from "@/components/app/TuningControls.vue";
+import ViewModeControls from "@/components/app/ViewModeControls.vue";
+import { useAppState } from "@/composables/useAppState";
+import { useFretboardState } from "@/composables/useFretboardState";
 
-// URL search params (reactive)
-const params = useUrlSearchParams("history");
+const {
+    accidentalPreference,
+    canEditSelectedTuning,
+    closeCustomTuningEditor,
+    draftTuning,
+    isEditingCustomTuning,
+    isEditingExistingCustomTuning,
+    mode,
+    note,
+    noteNames,
+    noteVisibility,
+    onDeleteCustomTuning,
+    onSaveCustomTuning,
+    openCreateCustomTuning,
+    openEditCustomTuning,
+    positionSpan,
+    positionStartFret,
+    scale,
+    selectedTuningId,
+    syncPositionSpan,
+    syncPositionStart,
+    syncShapeIndex,
+    threeNpsShapeIndex,
+    tuning,
+    tuningEditorMode,
+    tuningOptions,
+    viewMode,
+    chord,
+} = useAppState();
 
-const note = ref<string>((params.note as string) || "C");
-const scale = ref<string>((params.scale as string) || "major");
-const mode = ref<number>(Number.parseInt(params.mode as string, 10) || 1);
-const chord = ref<number | null>(
-    params.chord ? Number.parseInt(params.chord as string, 10) : null
-);
-// Find initial tuning object by value, fallback to default
-const initialTuning =
-    tunings.find((t) => t.value === params.tuning) || tunings[0];
-const tuning = ref(initialTuning);
-const noteNames = ref<string>((params.noteNames as string) || "notes");
-const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
-const show3nps = ref<boolean>((params.show3nps as string) === "1");
-const threeNpsShapeIndex = ref<number>(
-    Math.max(0, (Number.parseInt(params.shape as string, 10) || 1) - 1)
-);
-const fretCount = 20;
-
-const noteNamesOptions = [
-    { label: "Scale and chord Degrees", value: "degrees" },
-    { label: "Scale Notes", value: "notes" },
-];
-const noteVisibilityOptions = [
-    { label: "All Notes", value: "all" },
-    { label: "Only Scale Notes", value: "only-scale" },
-];
-
-// Derived option lists
-const scalesOptions = computed(() =>
-    scales.map((s) => ({ label: s.name, value: s.slug }))
-);
-const notesOptions = computed(() =>
-    baseNotes.map((n) => ({ label: n.name, value: n.name }))
-);
-const modeOptions = computed(() => {
-    const opts: { label: string; value: number }[] = [];
-    const idx = selectedScaleIndex.value;
-    if (idx < 0) return opts;
-    const formula = scales[idx].formula;
-    formula.forEach((entry) =>
-        opts.push({ label: entry.mode, value: entry.id })
-    );
-    return opts;
-});
-
-const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(scale.value));
-
-// Adjusted scaleNotes (assert note string)
-const scaleNotes = computed(() => {
-    return getScaleNotes(selectedScaleIndex.value, mode.value, note.value);
-});
-
-const chords = useDiatonicChords(scaleNotes, selectedScaleIndex, scales);
-
-// Refined chordRoot/Extension types (no null => undefined)
-const chordRoot = computed<string | number | undefined>(() =>
-    chord.value ? chords.value[chord.value - 1]?.note : undefined
-);
-const chordExtension = computed<string | number | undefined>(() =>
-    chord.value ? chords.value[chord.value - 1]?.chord : undefined
-);
-
-const chordsMap = chordsByPrimaryAbbreviation();
-
-const chordIntervals = computed(() =>
-    getChordIntervals(chordExtension.value, chordsMap)
-);
-
-const chordNotes = computed(() =>
-    getChordNotes(
-        chord.value,
-        scaleNotes.value,
-        chordIntervals.value,
-        selectedScaleIndex.value,
-        scales
-    )
-);
-const { shapes: threeNpsShapes } = use3nps(
+const {
+    activeChord,
+    activeFretboardChordNotes,
+    accidentalPreferenceOptions,
+    activeThreeNpsShape,
+    chordRootPitchClass,
+    chords,
+    fretCount,
+    maxPositionStartFret,
+    minPositionStartFret,
+    modeOptions,
+    next3npsShape,
+    nextPosition,
+    noteNamesOptions,
+    noteVisibilityOptions,
+    notesOptions,
+    prev3npsShape,
+    prevPosition,
+    resolvedAccidentalPreference,
+    resetPositionToRoot,
+    rootPitchClass,
+    safePositionSpan,
+    safePositionStartFret,
     scaleNotes,
-    computed(() => tuning.value.data),
-    fretCount
-);
-
-const activeThreeNpsShape = computed<number[][]>(() => {
-    if (!threeNpsShapes.value.length) return [];
-    const maxIndex = threeNpsShapes.value.length - 1;
-    const safeIndex = Math.min(Math.max(threeNpsShapeIndex.value, 0), maxIndex);
-    return threeNpsShapes.value[safeIndex];
+    scalesOptions,
+    show3nps,
+    showPosition,
+    title,
+    toggleChord,
+    viewModeOptions,
+} = useFretboardState({
+    accidentalPreference,
+    chord,
+    mode,
+    note,
+    positionSpan,
+    positionStartFret,
+    scale,
+    syncPositionSpan,
+    syncPositionStart,
+    syncShapeIndex,
+    threeNpsShapeIndex,
+    tuning,
+    viewMode,
 });
-
-const title = computed(() => {
-    let t = `Scale: ${note.value}-${scale.value}`;
-    if (mode.value > 1 && modeOptions.value[mode.value - 1]) {
-        t += ` (${modeOptions.value[mode.value - 1].label})`;
-    }
-    if (chord.value) {
-        t += ` / chord: ${chordRoot.value ?? ""}${chordExtension.value ?? ""}`;
-    }
-    return t;
-});
-
-// Active value for chords component (exclude null)
-const activeChord = computed<number | undefined>(() =>
-    chord.value == null ? undefined : chord.value
-);
-
-// Watchers syncing to URL params
-watch(note, (v) => (params.note = v));
-watch(scale, (v) => {
-    mode.value = 1;
-    params.scale = v;
-});
-watch(mode, (v) => {
-    chord.value = null;
-    params.mode = v as any;
-});
-watch(chord, (v) => (params.chord = v as any));
-watch(tuning, (v) => (params.tuning = v.value)); // store kebab-case value
-watch(noteNames, (v) => (params.noteNames = v));
-watch(noteVisibility, (v) => (params.noteVisibility = v));
-watch(show3nps, (v) => (params.show3nps = v ? "1" : "0"));
-watch(threeNpsShapeIndex, (v) => (params.shape = String(v + 1)));
-watch(threeNpsShapes, (shapes) => {
-    if (!shapes.length) {
-        threeNpsShapeIndex.value = 0;
-        return;
-    }
-    if (threeNpsShapeIndex.value > shapes.length - 1) {
-        threeNpsShapeIndex.value = shapes.length - 1;
-    }
-});
-
-function onClickChord(index: number) {
-    if (chord.value === index + 1) {
-        chord.value = null;
-    } else {
-        chord.value = index + 1;
-    }
-}
-
-function next3npsShape() {
-    if (!threeNpsShapes.value.length) return;
-    threeNpsShapeIndex.value =
-        (threeNpsShapeIndex.value + 1) % threeNpsShapes.value.length;
-}
-
-function prev3npsShape() {
-    if (!threeNpsShapes.value.length) return;
-    threeNpsShapeIndex.value =
-        (threeNpsShapeIndex.value - 1 + threeNpsShapes.value.length) %
-        threeNpsShapes.value.length;
-}
 </script>
 
 <template>
     <div class="w-full max-w-[1300px] mx-auto flex flex-col">
         <Label class="mb-4">{{ title }}</Label>
+
         <Fretboard
             :strings="tuning.data"
             :scale-notes="scaleNotes"
             :frets="fretCount"
             :shape-active="show3nps"
             :shape-frets-by-string="activeThreeNpsShape"
-            :chord-root="chordRoot"
-            :chord-notes="chordNotes"
+            :view-mode="viewMode"
+            :position-start-fret="safePositionStartFret"
+            :position-span="safePositionSpan"
+            :note-preference="resolvedAccidentalPreference"
+            :chord-root-pitch-class="chordRootPitchClass"
+            :chord-notes="activeFretboardChordNotes"
             :show-degrees="noteNames === 'degrees'"
-            :root="note"
+            :root-pitch-class="rootPitchClass"
             :show-rest="noteVisibility === 'all'"
             class="mb-8"
         />
 
-        <div class="flex flex-wrap items-center gap-3 mb-8">
-            <button
-                type="button"
-                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
-                :class="{
-                    '!border-indigo-700 !bg-indigo-100 dark:!bg-indigo-900 dark:!border-indigo-500':
-                        show3nps,
-                }"
-                @click="show3nps = !show3nps"
-            >
-                3NPS
-            </button>
-            <button
-                type="button"
-                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="!threeNpsShapes.length"
-                @click="prev3npsShape"
-            >
-                Prev Shape
-            </button>
-            <button
-                type="button"
-                class="border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex items-center justify-center rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:opacity-50 disabled:cursor-not-allowed"
-                :disabled="!threeNpsShapes.length"
-                @click="next3npsShape"
-            >
-                Next Shape
-            </button>
-            <span class="text-sm text-slate-500 dark:text-slate-300">
-                {{
-                    threeNpsShapes.length
-                        ? `Shape ${threeNpsShapeIndex + 1} / ${threeNpsShapes.length}`
-                        : "No 3NPS shape for this scale/tuning"
-                }}
-            </span>
-        </div>
+        <ViewModeControls
+            v-model:accidental-preference="accidentalPreference"
+            v-model:view-mode="viewMode"
+            v-model:position-start-fret="positionStartFret"
+            v-model:position-span="positionSpan"
+            :accidental-preference-options="accidentalPreferenceOptions"
+            :fret-count="fretCount"
+            :max-position-start-fret="maxPositionStartFret"
+            :min-position-start-fret="minPositionStartFret"
+            :show-3nps="show3nps"
+            :show-position="showPosition"
+            :three-nps-shapes-count="activeThreeNpsShape.length"
+            :view-mode-options="viewModeOptions"
+            @next-3nps-shape="next3npsShape"
+            @prev-3nps-shape="prev3npsShape"
+            @next-position="nextPosition"
+            @prev-position="prevPosition"
+            @reset-position-to-root="resetPositionToRoot"
+        />
 
-        <Label class="mb-4">Diatonic Chords</Label>
-        <div class="grid grid-cols-4 md:flex w-full gap-6 mb-8">
-            <ChordButton
-                v-for="(chord, index) in chords"
-                :active="activeChord === index + 1"
-                :note="chord.note"
-                :chord="chord.chord"
-                @click="onClickChord(index)"
+        <ChordPanel
+            :active-chord="activeChord"
+            :chords="chords"
+            @toggle="toggleChord"
+        />
+
+        <ScaleControls
+            v-model:note="note"
+            v-model:scale="scale"
+            v-model:mode="mode"
+            v-model:note-names="noteNames"
+            v-model:note-visibility="noteVisibility"
+            :mode-options="modeOptions"
+            :note-names-options="noteNamesOptions"
+            :note-visibility-options="noteVisibilityOptions"
+            :notes-options="notesOptions"
+            :scales-options="scalesOptions"
+        >
+            <TuningControls
+                v-model:selected-tuning-id="selectedTuningId"
+                :can-edit-selected-tuning="canEditSelectedTuning"
+                :tuning-options="tuningOptions"
+                @create="openCreateCustomTuning"
+                @edit="openEditCustomTuning"
             />
-        </div>
+        </ScaleControls>
 
-        <div class="mb-2 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            <div>
-                <Label class="mb-4">Root</Label>
-                <Select v-model="note">
-                    <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Make a selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in notesOptions"
-                            :value="option.value"
-                            :key="option.value"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label class="mb-4">Scale</Label>
-                <Select v-model="scale">
-                    <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Make a selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in scalesOptions"
-                            :value="option.value"
-                            :key="option.value"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label class="mb-4">Mode</Label>
-                <Select v-model="mode">
-                    <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Make a selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in modeOptions"
-                            :value="option.value"
-                            :key="option.label"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label class="mb-4">Note names</Label>
-                <Select v-model="noteNames">
-                    <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Make a selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in noteNamesOptions"
-                            :value="option.value"
-                            :key="option.value"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label class="mb-4">Note visibility</Label>
-                <Select v-model="noteVisibility">
-                    <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Make a selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in noteVisibilityOptions"
-                            :value="option.value"
-                            :key="option.value"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div>
-                <Label class="mb-4">Tuning</Label>
-                <Select v-model="tuning">
-                    <SelectTrigger class="w-full">
-                        <SelectValue placeholder="Make a selection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="option in tunings"
-                            :value="option"
-                            :key="option.value"
-                        >
-                            {{ option.label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-        </div>
+        <DialogTuningEditor
+            v-if="isEditingCustomTuning"
+            :model-value="draftTuning"
+            :show-delete="isEditingExistingCustomTuning"
+            :mode="tuningEditorMode"
+            @save="onSaveCustomTuning"
+            @cancel="closeCustomTuningEditor"
+            @delete="onDeleteCustomTuning"
+        />
 
-        <div class="flex items-center justify-center flex-col mt-10">
-            <Logo></Logo>
-
-            <span class="text-sm mb-4">
-                made by
-                <a
-                    class="text-indigo-500"
-                    target="_blank"
-                    href="https://github.com/harmendv"
-                    >harmendv</a
-                >
-            </span>
-
-            <ThemeToggle></ThemeToggle>
-        </div>
+        <AppFooter />
     </div>
 </template>
