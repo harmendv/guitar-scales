@@ -57,7 +57,8 @@ const highlightByPitchClass = computed(() => {
 
 const notes = computed(() => {
     let octave = props.startOctave;
-    const chordShapeOnlyMode = props.chordRootPitchClass != null && props.shapeActive;
+    const chordShapeOnlyMode =
+        props.chordRootPitchClass != null && props.shapeActive;
     const positionEndFret = props.positionStartFret + props.positionSpan - 1;
     const isPositionMode = props.viewMode === "position";
 
@@ -65,23 +66,31 @@ const notes = computed(() => {
         const note = getNoteByOffset(props.start, i, props.notePreference);
         const pitchClass = getPitchClass(note);
         if (note === "C" && i !== 0) octave++;
-        const highlightedNote = pitchClass == null
-            ? undefined
-            : highlightByPitchClass.value.get(pitchClass);
+        const highlightedNote =
+            pitchClass == null
+                ? undefined
+                : highlightByPitchClass.value.get(pitchClass);
         const isShapeFret = props.shapeFrets.includes(i);
-        const inActivePosition = i >= props.positionStartFret && i <= positionEndFret;
+        const inActivePosition =
+            i >= props.positionStartFret && i <= positionEndFret;
         const highlightInCurrentView = isPositionMode ? inActivePosition : true;
         return {
             name: note,
             pitchClass,
             octave,
-            highlight: props.chordRootPitchClass != null && pitchClass != null
-                ? chordShapeOnlyMode
-                  ? Boolean(props.chordNotes[String(pitchClass)]) && isShapeFret && highlightInCurrentView
-                  : Boolean(props.chordNotes[String(pitchClass)]) && highlightInCurrentView
-                : props.shapeActive
-                  ? Boolean(highlightedNote) && isShapeFret && highlightInCurrentView
-                  : Boolean(highlightedNote) && highlightInCurrentView,
+            highlight:
+                props.chordRootPitchClass != null && pitchClass != null
+                    ? chordShapeOnlyMode
+                        ? Boolean(props.chordNotes[String(pitchClass)]) &&
+                          isShapeFret &&
+                          highlightInCurrentView
+                        : Boolean(props.chordNotes[String(pitchClass)]) &&
+                          highlightInCurrentView
+                    : props.shapeActive
+                      ? Boolean(highlightedNote) &&
+                        isShapeFret &&
+                        highlightInCurrentView
+                      : Boolean(highlightedNote) && highlightInCurrentView,
             root:
                 pitchClass != null &&
                 (props.chordRootPitchClass != null
@@ -111,7 +120,7 @@ const notes = computed(() => {
             <div
                 :class="
                     cn([
-                        'relative bg-slate-100 dark:bg-slate-800 z-10 w-8 h-8 flex font-mono text-xs md:text-md font-bold items-center justify-center rounded-full text-slate-400 dark:text-slate-500 border-1 border-transparent flex-shrink-0 transition cursor-pointer hover:scale-110',
+                        'relative bg-slate-100 dark:bg-slate-800 z-10 w-6 h-6 lg:w-8 lg:h-8 flex font-mono text-xs lg:text-sm font-bold items-center justify-center rounded-full text-slate-400 dark:text-slate-500 border-1 border-transparent flex-shrink-0 transition cursor-pointer hover:scale-110',
                         note.highlight
                             ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 border-indigo-600 dark:text-indigo-100 shadow-lg'
                             : '',

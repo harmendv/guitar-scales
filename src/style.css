@@ -3,25 +3,6 @@
 
 @custom-variant dark (&:is([data-theme="dark"] *));
 
-* {
-    box-sizing: border-box;
-}
-body {
-    margin: 0;
-    display: flex;
-    place-items: center;
-    min-width: 320px;
-    min-height: 100vh;
-    height: auto;
-}
-
-#app {
-    margin: 0 auto;
-    text-align: center;
-    padding: 3rem;
-    width: 100%;
-}
-
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -133,11 +114,31 @@ body {
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    * {
+        @apply border-border outline-ring/50;
     }
-  body {
-    @apply bg-background text-foreground;
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        display: flex;
+        place-items: center;
+        min-width: 320px;
+        min-height: 100vh;
+        height: auto;
+    }
+
+    #app {
+        margin: 0 auto;
+        text-align: center;
+        width: 100%;
     }
 }
 

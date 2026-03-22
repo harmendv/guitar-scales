@@ -24,7 +24,7 @@ const noteVisibility = defineModel<string>("noteVisibility", { required: true })
 </script>
 
 <template>
-    <div class="mb-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="mb-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         <div>
             <Label class="mb-4">Root</Label>
             <Select v-model="note">

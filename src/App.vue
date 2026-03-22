@@ -88,7 +88,7 @@ const {
 </script>
 
 <template>
-    <div class="w-full max-w-[1300px] mx-auto flex flex-col">
+    <div class="w-full max-w-[1300px] mx-auto flex flex-col p-4 lg:p-10">
         <Label class="mb-4">{{ title }}</Label>
 
         <Fretboard
