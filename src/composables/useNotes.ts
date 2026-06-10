@@ -58,6 +58,21 @@ function modulo(value: number, base: number): number {
     return ((value % base) + base) % base;
 }
 
+const DEGREE_BY_SEMITONE = [
+    "1",
+    "♭2",
+    "2",
+    "♭3",
+    "3",
+    "4",
+    "♭5",
+    "5",
+    "♭6",
+    "6",
+    "♭7",
+    "7",
+] as const;
+
 function normalizeNoteName(note: string): string {
     return note.trim().replaceAll("♭", "b").toUpperCase();
 }
@@ -156,10 +171,34 @@ export function getScaleNotes(
     if (!modeEntry) return [];
 
     const modeOffset = modeEntry.chromatic - 1;
+    const parentPitchClass = getPitchClass(note);
+    if (parentPitchClass == null) return [];
 
-    return scale.formula.map((entry) => ({
-        pitchClass: modulo(getPitchClass(note)! + entry.chromatic - 1 + (12 - modeOffset), 12),
-        note: getNoteByOffset(note, entry.chromatic - 1 + (12 - modeOffset), preference),
-        degree: entry.degree,
-    }));
+    const rotatedFormula = [
+        ...scale.formula.slice(mode - 1),
+        ...scale.formula.slice(0, mode - 1),
+    ];
+
+    return rotatedFormula.map((entry) => {
+        const semitoneFromParent = entry.chromatic - 1;
+        const semitoneFromModeRoot = modulo(semitoneFromParent - modeOffset, 12);
+
+        return {
+            pitchClass: modulo(parentPitchClass + semitoneFromParent, 12),
+            note: getNoteByOffset(note, semitoneFromParent, preference),
+            degree: DEGREE_BY_SEMITONE[semitoneFromModeRoot],
+        };
+    });
+}
+
+export function getModeRootNote(
+    scaleIndex: number,
+    mode: number,
+    note: string,
+    preference: AccidentalPreference = "auto"
+): string {
+    const scale = scales[scaleIndex];
+    const modeEntry = scale?.formula[mode - 1];
+    if (!modeEntry) return "";
+    return getNoteByOffset(note, modeEntry.chromatic - 1, preference);
 }

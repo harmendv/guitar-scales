@@ -3,6 +3,7 @@ import { scales, scalesFlatMap } from "@/composables/useScales";
 import {
     formatPitchClass,
     getNoteByOffset,
+    getModeRootNote,
     getPitchClass,
     getScaleNotes,
     resolveAccidentalPreference,
@@ -12,7 +13,6 @@ import {
     chordsByPrimaryAbbreviation,
     getChordIntervals,
     getChordNotes,
-    useDiatonicChords,
 } from "@/composables/useChords";
 import { use3nps } from "@/composables/use3nps";
 import { usePositionView } from "@/composables/usePositionView";
@@ -83,14 +83,36 @@ export function useFretboardState(input: {
             input.accidentalPreference.value
         )
     );
-    const chords = useDiatonicChords(scaleNotes, selectedScaleIndex, scales);
+    const modeFormula = computed(() => {
+        const scale = scales[selectedScaleIndex.value];
+        if (!scale) return [];
+        return [
+            ...scale.formula.slice(input.mode.value - 1),
+            ...scale.formula.slice(0, input.mode.value - 1),
+        ];
+    });
+    const chords = computed(() =>
+        modeFormula.value.map((entry, index) => ({
+            note: scaleNotes.value[index]?.note ?? "",
+            chord: entry.chord,
+            degree: scaleNotes.value[index]?.degree ?? entry.degree,
+        }))
+    );
     const activeChord = computed<number | undefined>(() =>
         input.chord.value == null ? undefined : input.chord.value
     );
     const chordRoot = computed<string | number | undefined>(() =>
         input.chord.value ? chords.value[input.chord.value - 1]?.note : undefined
     );
-    const rootPitchClass = computed(() => getPitchClass(input.note.value));
+    const modeRootNote = computed(() =>
+        getModeRootNote(
+            selectedScaleIndex.value,
+            input.mode.value,
+            input.note.value,
+            input.accidentalPreference.value
+        )
+    );
+    const rootPitchClass = computed(() => scaleNotes.value[0]?.pitchClass ?? null);
     const chordRootPitchClass = computed(() =>
         chordRoot.value == null ? null : getPitchClass(String(chordRoot.value))
     );
@@ -134,9 +156,12 @@ export function useFretboardState(input: {
         return threeNpsShapes.value[safeIndex];
     });
     const title = computed(() => {
-        let nextTitle = `Scale: ${input.note.value}-${input.scale.value}`;
-        if (input.mode.value > 1 && modeOptions.value[input.mode.value - 1]) {
-            nextTitle += ` (${modeOptions.value[input.mode.value - 1].label})`;
+        const modeLabel = modeOptions.value[input.mode.value - 1]?.label;
+        let nextTitle = modeLabel
+            ? `Scale: ${modeRootNote.value} ${modeLabel}`
+            : `Scale: ${input.note.value}-${input.scale.value}`;
+        if (modeLabel && input.mode.value > 1) {
+            nextTitle += ` (from ${input.note.value} ${input.scale.value})`;
         }
         if (input.chord.value) {
             nextTitle += ` / chord: ${chordRoot.value ?? ""}${chordExtension.value ?? ""}`;
