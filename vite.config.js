@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [vue(), tailwindcss()],
-    base: "/guitar-scales/",
+    base: "/",
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
