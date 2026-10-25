@@ -1,23 +1,20 @@
 <script setup lang="ts">
-import { Logo } from "@/components/ui/logo";
+import { HarmenDevLogo } from "@/components/ui/harmen-dev-logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 </script>
 
 <template>
-    <div class="flex items-center justify-center flex-col mt-10">
-        <Logo />
-
-        <span class="text-sm mb-4">
+    <footer class="flex flex-col items-center gap-3 text-xs text-muted-foreground sm:flex-row sm:justify-between sm:gap-4">
+        <a
+            class="group inline-flex items-center gap-1.5 hover:text-foreground"
+            target="_blank"
+            href="https://harmen.dev"
+        >
             made by
-            <a
-                class="text-indigo-500"
-                target="_blank"
-                href="https://github.com/harmendv"
-            >
-                harmendv
-            </a>
-        </span>
+            <HarmenDevLogo class="h-3.5 w-auto text-primary" />
+            <span class="font-medium text-foreground group-hover:underline underline-offset-2">harmen.dev</span>
+        </a>
 
         <ThemeToggle />
-    </div>
+    </footer>
 </template>

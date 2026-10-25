@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref, watch, nextTick } from "vue";
 import { type ResolvedAccidentalPreference, type ScaleNote } from "@/composables/useNotes"
 import { type ChordNotes } from "@/composables/useChords";
 import FretboardString from "./FretboardString.vue";
-import FretboardNumber from "./FretboardNumber.vue";
 
 interface GuitarString {
     note: string;
@@ -22,6 +21,7 @@ const props = withDefaults(
         positionSpan?: number;
         notePreference?: ResolvedAccidentalPreference;
         showDegrees: boolean | string;
+        showLabels?: boolean;
         showRest: boolean | string;
         rootPitchClass: number | null;
         chordRootPitchClass: number | null;
@@ -45,12 +45,16 @@ const props = withDefaults(
         positionSpan: 5,
         notePreference: "sharp",
         showDegrees: false,
+        showLabels: true,
         showRest: false,
         rootPitchClass: null,
         chordRootPitchClass: null,
         chordNotes: () => ({}),
     }
 );
+
+const SINGLE_INLAYS = [3, 5, 7, 9, 15, 17, 19, 21];
+const DOUBLE_INLAYS = [12, 24];
 
 const reversedStrings = computed<GuitarString[]>(() => {
     return Array.from(props.strings).reverse();
@@ -59,43 +63,117 @@ const reversedStrings = computed<GuitarString[]>(() => {
 const reversedShapeFretsByString = computed<number[][]>(() =>
     Array.from(props.shapeFretsByString).reverse()
 );
+
+// --fret-min is 36px on phones and 40px from sm up (set on the wrapper below).
+const fretColumns = computed(
+    () => `44px repeat(${props.frets - 1}, minmax(var(--fret-min), 1fr))`
+);
+
+// Thin treble strings on top, thicker wound strings below.
+function stringThickness(index: number) {
+    const count = reversedStrings.value.length;
+    return 1 + (index / Math.max(count - 1, 1)) * 1.75;
+}
+
+const activeRange = computed<[number, number] | null>(() => {
+    if (props.viewMode === "position") {
+        return [props.positionStartFret, props.positionStartFret + props.positionSpan - 1];
+    }
+    if (props.shapeActive) {
+        const frets = props.shapeFretsByString.flat();
+        if (!frets.length) return null;
+        return [Math.min(...frets), Math.max(...frets)];
+    }
+    return null;
+});
+
+function inActiveRange(fret: number) {
+    return activeRange.value != null && fret >= activeRange.value[0] && fret <= activeRange.value[1];
+}
+
+// When the neck is wider than the screen (phones), bring the selected position into view.
+const scroller = ref<HTMLElement | null>(null);
+watch(
+    () => activeRange.value?.[0],
+    async (startFret) => {
+        await nextTick();
+        const element = scroller.value;
+        if (startFret == null || !element || element.scrollWidth <= element.clientWidth) return;
+        const column = element.querySelector<HTMLElement>(`[data-fret="${startFret}"]`);
+        if (!column) return;
+        element.scrollTo({ left: Math.max(column.offsetLeft - 16, 0), behavior: "smooth" });
+    }
+);
 </script>
 
 <template>
-    <div
-        class="flex flex-col overflow-x-auto w-full bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-y-hidden border"
-    >
-        <div class="flex-grow">
-            <FretboardString
-                v-for="(start, index) in reversedStrings"
-                :frets="frets"
-                :start="start.note"
-                :start-octave="start.octave"
-                :key="index"
-                :highlight="scaleNotes"
-                :shape-frets="reversedShapeFretsByString[index] || []"
-                :shape-active="shapeActive"
-                :view-mode="viewMode"
-                :position-start-fret="positionStartFret"
-                :position-span="positionSpan"
-                :note-preference="notePreference"
-                :chord-root-pitch-class="chordRootPitchClass"
-                :chord-notes="chordNotes"
-                :root-pitch-class="rootPitchClass"
-                :show-degrees="showDegrees"
-                :show-rest="showRest"
-            />
-        </div>
+    <div ref="scroller" class="overflow-x-auto pb-1">
         <div
-            class="relative w-full flex justify-between border-t border-slate-300 dark:border-slate-900"
+            class="min-w-[800px] [--fret-min:36px] sm:min-w-[880px] sm:[--fret-min:40px]"
+            :style="{ '--fret-columns': fretColumns }"
         >
-            <FretboardNumber
-                v-for="(fret, index) in frets"
-                :key="`fret${index}`"
-                :highlight="[3, 5, 7, 9, 12].includes(index)"
-            >
-                {{ index }}
-            </FretboardNumber>
+            <div class="relative overflow-hidden rounded-xl bg-[var(--wood)] shadow-[inset_0_0_40px_var(--board-shadow)] ring-1 ring-[var(--board-edge)]">
+                <div class="absolute inset-0 grid" style="grid-template-columns: var(--fret-columns)">
+                    <div
+                        v-for="(_, fret) in frets"
+                        :key="`fret-${fret}`"
+                        :data-fret="fret"
+                        :class="[
+                            'relative',
+                            fret === 0
+                                ? 'border-r-[6px] border-[var(--nut)] bg-[var(--wood-open)]'
+                                : 'border-r-2 border-[var(--fret-wire)] last:border-r-0',
+                            inActiveRange(fret) ? 'bg-[var(--wood-highlight)]' : '',
+                        ]"
+                    >
+                        <span
+                            v-if="SINGLE_INLAYS.includes(fret)"
+                            class="absolute top-1/2 left-1/2 size-2.5 -translate-1/2 rounded-full bg-[var(--inlay)]"
+                        ></span>
+                        <template v-if="DOUBLE_INLAYS.includes(fret)">
+                            <span class="absolute top-1/3 left-1/2 size-2.5 -translate-1/2 rounded-full bg-[var(--inlay)]"></span>
+                            <span class="absolute top-2/3 left-1/2 size-2.5 -translate-1/2 rounded-full bg-[var(--inlay)]"></span>
+                        </template>
+                    </div>
+                </div>
+                <div class="relative py-1.5">
+                    <FretboardString
+                        v-for="(start, index) in reversedStrings"
+                        :frets="frets"
+                        :start="start.note"
+                        :start-octave="start.octave"
+                        :key="index"
+                        :highlight="scaleNotes"
+                        :shape-frets="reversedShapeFretsByString[index] || []"
+                        :shape-active="shapeActive"
+                        :view-mode="viewMode"
+                        :position-start-fret="positionStartFret"
+                        :position-span="positionSpan"
+                        :note-preference="notePreference"
+                        :chord-root-pitch-class="chordRootPitchClass"
+                        :chord-notes="chordNotes"
+                        :root-pitch-class="rootPitchClass"
+                        :show-degrees="showDegrees"
+                        :show-labels="showLabels"
+                        :show-rest="showRest"
+                        :thickness="stringThickness(index)"
+                    />
+                </div>
+            </div>
+            <div class="mt-2 grid" style="grid-template-columns: var(--fret-columns)">
+                <span
+                    v-for="(_, fret) in frets"
+                    :key="`fret-number-${fret}`"
+                    :class="[
+                        'text-center tabular-nums text-[11px]',
+                        SINGLE_INLAYS.includes(fret) || DOUBLE_INLAYS.includes(fret)
+                            ? 'font-semibold text-foreground'
+                            : 'text-muted-foreground',
+                    ]"
+                >
+                    {{ fret }}
+                </span>
+            </div>
         </div>
     </div>
 </template>

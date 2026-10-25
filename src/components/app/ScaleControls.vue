@@ -1,17 +1,12 @@
 <script setup lang="ts">
-import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Segmented } from "@/components/ui/segmented";
+import KeyPicker from "./pickers/KeyPicker.vue";
+import ModePicker from "./pickers/ModePicker.vue";
+import ScalePicker from "./pickers/ScalePicker.vue";
 
 defineProps<{
+    accidentalPreferenceOptions: { label: string; value: string }[];
     modeOptions: { label: string; value: number }[];
-    noteNamesOptions: { label: string; value: string }[];
-    noteVisibilityOptions: { label: string; value: string }[];
     notesOptions: { label: string; value: string }[];
     scalesOptions: { label: string; value: string }[];
 }>();
@@ -19,97 +14,31 @@ defineProps<{
 const note = defineModel<string>("note", { required: true });
 const scale = defineModel<string>("scale", { required: true });
 const mode = defineModel<number>("mode", { required: true });
-const noteNames = defineModel<string>("noteNames", { required: true });
-const noteVisibility = defineModel<string>("noteVisibility", { required: true });
+const accidentalPreference = defineModel<string>("accidentalPreference", { required: true });
 </script>
 
 <template>
-    <div class="mb-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        <div>
-            <Label class="mb-4">Parent key</Label>
-            <Select v-model="note">
-                <SelectTrigger class="w-full">
-                    <SelectValue placeholder="Make a selection" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="option in notesOptions"
-                        :key="option.value"
-                        :value="option.value"
-                    >
-                        {{ option.label }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-        <div>
-            <Label class="mb-4">Scale</Label>
-            <Select v-model="scale">
-                <SelectTrigger class="w-full">
-                    <SelectValue placeholder="Make a selection" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="option in scalesOptions"
-                        :key="option.value"
-                        :value="option.value"
-                    >
-                        {{ option.label }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-        <div>
-            <Label class="mb-4">Mode</Label>
-            <Select v-model="mode">
-                <SelectTrigger class="w-full">
-                    <SelectValue placeholder="Make a selection" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="option in modeOptions"
-                        :key="option.label"
-                        :value="option.value"
-                    >
-                        {{ option.label }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-        <div>
-            <Label class="mb-4">Note names</Label>
-            <Select v-model="noteNames">
-                <SelectTrigger class="w-full">
-                    <SelectValue placeholder="Make a selection" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="option in noteNamesOptions"
-                        :key="option.value"
-                        :value="option.value"
-                    >
-                        {{ option.label }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-        <div>
-            <Label class="mb-4">Note visibility</Label>
-            <Select v-model="noteVisibility">
-                <SelectTrigger class="w-full">
-                    <SelectValue placeholder="Make a selection" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="option in noteVisibilityOptions"
-                        :key="option.value"
-                        :value="option.value"
-                    >
-                        {{ option.label }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-        <slot />
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <section>
+            <div class="mb-3 flex h-7 items-center justify-between gap-3">
+                <h2 class="section-label">Key</h2>
+                <Segmented
+                    v-model="accidentalPreference"
+                    :options="accidentalPreferenceOptions"
+                    class="p-0.5 [&_button]:h-6 [&_button]:min-w-7 [&_button]:px-2 [&_button]:text-[13px]"
+                />
+            </div>
+            <KeyPicker v-model="note" :notes-options="notesOptions" />
+        </section>
+
+        <section>
+            <h2 class="section-label mb-3 flex h-7 items-center">Scale</h2>
+            <ScalePicker v-model="scale" :scales-options="scalesOptions" />
+        </section>
+
+        <section>
+            <h2 class="section-label mb-3 flex h-7 items-center">Mode</h2>
+            <ModePicker v-model="mode" :mode-options="modeOptions" />
+        </section>
     </div>
 </template>

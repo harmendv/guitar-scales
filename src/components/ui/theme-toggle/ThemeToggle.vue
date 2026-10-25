@@ -30,7 +30,7 @@ onMounted(() => {
 <template>
     <ToggleGroup
         type="single"
-        class="border"
+        class="rounded-lg bg-surface p-0.5 [&_[data-slot=toggle-group-item]]:h-7 [&_[data-slot=toggle-group-item]]:rounded-md [&_[data-slot=toggle-group-item]]:px-2 [&_[data-state=on]]:bg-card [&_[data-state=on]]:shadow-sm [&_svg]:size-3.5"
         v-model="theme"
     >
         <ToggleGroupItem value="light"> <SunIcon></SunIcon> </ToggleGroupItem>

@@ -12,7 +12,7 @@ interface StringNotePosition {
 }
 
 interface Candidate {
-    frets: [number, number, number];
+    frets: number[];
     startDegree: number;
     center: number;
     span: number;
@@ -20,6 +20,14 @@ interface Candidate {
 
 function modulo(value: number, base: number): number {
     return ((value % base) + base) % base;
+}
+
+// A playable shape stays within one hand position plus the shifts between strings.
+const MAX_SHAPE_RANGE = 9;
+
+function fretRange(shape: number[][]): number {
+    const frets = shape.flat();
+    return Math.max(...frets) - Math.min(...frets);
 }
 
 function isConsecutiveDegree(
@@ -48,39 +56,41 @@ function findSpecialTransition(strings: InstrumentString[]): number {
 
 function buildCandidatesByString(
     strings: InstrumentString[],
-    scaleDegreeByNote: Map<string, number>,
+    scaleDegreeByPitchClass: Map<number, number>,
     fretCount: number,
-    scaleLength: number
+    scaleLength: number,
+    maxSpan: number,
+    notesPerString: number
 ): Candidate[][] {
     return strings.map((stringData) => {
         const positions: StringNotePosition[] = [];
         for (let fret = 0; fret < fretCount; fret++) {
-            const noteAtFret = getNoteByOffset(stringData.note, fret);
-            const degreeIndex = scaleDegreeByNote.get(noteAtFret);
+            const pitchClass = getPitchClass(getNoteByOffset(stringData.note, fret));
+            const degreeIndex = pitchClass == null ? undefined : scaleDegreeByPitchClass.get(pitchClass);
             if (degreeIndex != null) {
                 positions.push({ fret, degreeIndex });
             }
         }
 
         const candidates: Candidate[] = [];
-        for (let i = 0; i < positions.length - 2; i++) {
-            const first = positions[i];
-            const second = positions[i + 1];
-            const third = positions[i + 2];
-            if (
-                !isConsecutiveDegree(first.degreeIndex, second.degreeIndex, scaleLength) ||
-                !isConsecutiveDegree(second.degreeIndex, third.degreeIndex, scaleLength)
-            ) {
-                continue;
-            }
+        for (let i = 0; i + notesPerString <= positions.length; i++) {
+            const group = positions.slice(i, i + notesPerString);
+            const consecutive = group.every(
+                (position, index) =>
+                    index === 0 ||
+                    isConsecutiveDegree(group[index - 1].degreeIndex, position.degreeIndex, scaleLength)
+            );
+            if (!consecutive) continue;
 
-            const span = third.fret - first.fret;
-            if (span > 4) continue;
+            const first = group[0];
+            const last = group[group.length - 1];
+            const span = last.fret - first.fret;
+            if (span > maxSpan) continue;
 
             candidates.push({
-                frets: [first.fret, second.fret, third.fret],
+                frets: group.map((position) => position.fret),
                 startDegree: first.degreeIndex,
-                center: (first.fret + third.fret) / 2,
+                center: (first.fret + last.fret) / 2,
                 span,
             });
         }
@@ -114,12 +124,16 @@ function solveShapeForStartDegree(
     candidatesByString: Candidate[][],
     scaleLength: number,
     startDegree: number,
-    specialTransitionIndex: number
+    specialTransitionIndex: number,
+    notesPerString: number,
+    startFret?: number
 ): number[][] | null {
     const perString = candidatesByString.map((candidates, stringIndex) => {
-        const expectedStartDegree = modulo(startDegree + stringIndex * 3, scaleLength);
+        const expectedStartDegree = modulo(startDegree + stringIndex * notesPerString, scaleLength);
         return candidates.filter(
-            (candidate) => candidate.startDegree === expectedStartDegree
+            (candidate) =>
+                candidate.startDegree === expectedStartDegree &&
+                (stringIndex !== 0 || startFret == null || candidate.frets[0] === startFret)
         );
     });
 
@@ -183,8 +197,12 @@ function solveShapeForStartDegree(
 export function use3nps(
     scaleNotes: ComputedRef<ScaleNote[]>,
     strings: ComputedRef<InstrumentString[]>,
-    fretCount: number
+    fretCount: number,
+    startFrets?: ComputedRef<number[]>
 ) {
+    // Three notes per string for seven-note scales; pentatonics only fit on the neck as two
+    // per string, which is how the classic pentatonic boxes are built.
+    const notesPerString = computed(() => (scaleNotes.value.length <= 5 ? 2 : 3));
     const shapes = computed<number[][][]>(() => {
         const orderedScaleNotes = scaleNotes.value;
         const tuningStrings = strings.value;
@@ -192,42 +210,50 @@ export function use3nps(
 
         if (!scaleLength || scaleLength < 3 || !tuningStrings.length) return [];
 
-        const scaleDegreeByNote = new Map<string, number>();
+        const scaleDegreeByPitchClass = new Map<number, number>();
         orderedScaleNotes.forEach((scaleNote, index) =>
-            scaleDegreeByNote.set(scaleNote.note, index)
+            scaleDegreeByPitchClass.set(scaleNote.pitchClass, index)
         );
 
-        const candidatesByString = buildCandidatesByString(
-            tuningStrings,
-            scaleDegreeByNote,
-            fretCount,
-            scaleLength
+        // Prefer a 4-fret stretch per string; scales with wide steps (Enigmatic, whole tone) need more.
+        const candidatesBySpan = [4, 5, 6].map((maxSpan) =>
+            buildCandidatesByString(
+                tuningStrings,
+                scaleDegreeByPitchClass,
+                fretCount,
+                scaleLength,
+                maxSpan,
+                notesPerString.value
+            )
         );
         const specialTransitionIndex = findSpecialTransition(tuningStrings);
 
-        const rawShapes: number[][][] = [];
-        for (let degree = 0; degree < scaleLength; degree++) {
-            const shape = solveShapeForStartDegree(
-                candidatesByString,
-                scaleLength,
-                degree,
-                specialTransitionIndex
-            );
-            if (shape) rawShapes.push(shape);
-        }
-
-        const unique: number[][][] = [];
-        const seen = new Set<string>();
-        rawShapes.forEach((shape) => {
-            const key = shape.map((frets) => frets.join("-")).join("|");
-            if (!seen.has(key)) {
-                seen.add(key);
-                unique.push(shape);
+        // One shape per scale degree, indexed by degree so it lines up with the numbered positions.
+        return Array.from({ length: scaleLength }, (_, degree) => {
+            // Try the requested start, then an octave lower or higher, so shapes near the top of the
+            // neck don't jump an octave halfway across the strings.
+            const startFret = startFrets?.value[degree];
+            const starts = startFret == null ? [undefined] : [startFret, startFret - 12, startFret + 12, undefined];
+            let fallback: number[][] | null = null;
+            for (const candidatesByString of candidatesBySpan) {
+                for (const start of starts) {
+                    if (start != null && start < 0) continue;
+                    const shape = solveShapeForStartDegree(
+                        candidatesByString,
+                        scaleLength,
+                        degree,
+                        specialTransitionIndex,
+                        notesPerString.value,
+                        start
+                    );
+                    if (!shape) continue;
+                    if (fretRange(shape) <= MAX_SHAPE_RANGE) return shape;
+                    fallback ??= shape;
+                }
             }
+            return fallback ?? [];
         });
-
-        return unique;
     });
 
-    return { shapes };
+    return { shapes, notesPerString };
 }

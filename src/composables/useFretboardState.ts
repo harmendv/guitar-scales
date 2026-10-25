@@ -1,23 +1,27 @@
-import { computed, watch, type ComputedRef, type Ref } from "vue";
+import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
 import { scales, scalesFlatMap } from "@/composables/useScales";
 import {
+    formatNoteLabel,
     formatPitchClass,
-    getNoteByOffset,
-    getModeRootNote,
     getPitchClass,
     getScaleNotes,
     resolveAccidentalPreference,
     type AccidentalPreference,
+    type ResolvedAccidentalPreference,
+    type ScaleNote,
 } from "@/composables/useNotes";
 import {
+    type ChordNotes,
+    chords as chordDefinitions,
     chordsByPrimaryAbbreviation,
-    getChordIntervals,
-    getChordNotes,
 } from "@/composables/useChords";
 import { use3nps } from "@/composables/use3nps";
+import { playTone } from "@/composables/useAudio";
 import { usePositionView } from "@/composables/usePositionView";
 import type { FretboardViewMode } from "@/composables/useAppState";
 import type { Tuning } from "@/composables/useTunings";
+
+export type PositionStyle = "box" | "3nps";
 
 export function useFretboardState(input: {
     chord: Ref<number | null>;
@@ -35,36 +39,55 @@ export function useFretboardState(input: {
     viewMode: Ref<FretboardViewMode>;
 }) {
     const fretCount = 22;
-    const viewModeOptions: { label: string; value: FretboardViewMode }[] = [
-        { label: "Full neck", value: "full" },
-        { label: "3NPS", value: "3nps" },
-        { label: "Position", value: "position" },
-    ];
     const noteNamesOptions = [
-        { label: "Scale and chord Degrees", value: "degrees" },
-        { label: "Scale Notes", value: "notes" },
+        { label: "Notes", value: "notes" },
+        { label: "Intervals", value: "degrees" },
+        { label: "Dots", value: "dots" },
     ];
     const noteVisibilityOptions = [
-        { label: "All Notes", value: "all" },
-        { label: "Only Scale Notes", value: "only-scale" },
+        { label: "Scale only", value: "only-scale" },
+        { label: "All notes", value: "all" },
     ];
     const accidentalPreferenceOptions = [
         { label: "Auto", value: "auto" },
-        { label: "Sharps", value: "sharp" },
-        { label: "Flats", value: "flat" },
+        { label: "♯", value: "sharp" },
+        { label: "♭", value: "flat" },
     ];
-    const resolvedAccidentalPreference = computed(() =>
-        resolveAccidentalPreference(input.note.value, input.accidentalPreference.value)
-    );
-
     const selectedScaleIndex = computed(() => scalesFlatMap.indexOf(input.scale.value));
+    const selectedScale = computed(() => scales[selectedScaleIndex.value]);
+    // The selected key is the mode's root; the parent scale starts this many semitones below it.
+    const modeOffset = computed(
+        () => (scales[selectedScaleIndex.value]?.formula[input.mode.value - 1]?.chromatic ?? 1) - 1
+    );
+    const parentPitchClass = computed(() => {
+        const rootPitchClassValue = getPitchClass(input.note.value);
+        return rootPitchClassValue == null ? null : (rootPitchClassValue - modeOffset.value + 12) % 12;
+    });
+    const resolvedAccidentalPreference = computed<ResolvedAccidentalPreference>(() => {
+        if (input.accidentalPreference.value !== "auto") return input.accidentalPreference.value;
+        // Keep a spelling the user picked (D♭, F♯); otherwise follow the parent key signature.
+        if (/[b♭♯#]/.test(input.note.value)) {
+            return resolveAccidentalPreference(input.note.value, "auto");
+        }
+        return parentPitchClass.value != null && FLAT_KEY_PITCH_CLASSES.includes(parentPitchClass.value)
+            ? "flat"
+            : "sharp";
+    });
+    const parentNote = computed(() =>
+        parentPitchClass.value == null
+            ? input.note.value
+            : formatPitchClass(parentPitchClass.value, resolvedAccidentalPreference.value)
+    );
     const scalesOptions = computed(() =>
         scales.map((scale) => ({ label: scale.name, value: scale.slug }))
     );
     const notesOptions = computed(() =>
         Array.from({ length: 12 }, (_, pitchClass) => {
-            const note = formatPitchClass(pitchClass, resolvedAccidentalPreference.value);
-            return { label: note, value: note };
+            const note =
+                input.accidentalPreference.value === "auto"
+                    ? KEY_NAMES[pitchClass]
+                    : formatPitchClass(pitchClass, input.accidentalPreference.value);
+            return { label: formatNoteLabel(note), value: note };
         })
     );
     const modeOptions = computed(() => {
@@ -75,14 +98,27 @@ export function useFretboardState(input: {
             value: entry.id,
         }));
     });
-    const scaleNotes = computed(() =>
-        getScaleNotes(
+    const scaleNotes = computed(() => {
+        const notes = getScaleNotes(
             selectedScaleIndex.value,
             input.mode.value,
-            input.note.value,
-            input.accidentalPreference.value
-        )
-    );
+            parentNote.value,
+            resolvedAccidentalPreference.value
+        );
+        if (input.accidentalPreference.value !== "auto") return notes;
+        // Seven-note scales get one note per letter (C D E♭ F♯ G A♭ B), with degrees to match.
+        if (notes.length === 7) return spellByLetter(notes);
+        // Otherwise, from a natural key, spell altered degrees by their degree: ♭5 as E♭ rather than D♯.
+        if (/[b♭♯#]/.test(input.note.value)) return notes;
+        return notes.map((scaleNote) => {
+            const accidental = scaleNote.degree.match(/^[♭♯]/)?.[0];
+            if (!accidental) return scaleNote;
+            return {
+                ...scaleNote,
+                note: formatPitchClass(scaleNote.pitchClass, accidental === "♭" ? "flat" : "sharp"),
+            };
+        });
+    });
     const modeFormula = computed(() => {
         const scale = scales[selectedScaleIndex.value];
         if (!scale) return [];
@@ -91,84 +127,131 @@ export function useFretboardState(input: {
             ...scale.formula.slice(0, input.mode.value - 1),
         ];
     });
-    const chords = computed(() =>
-        modeFormula.value.map((entry, index) => ({
-            note: scaleNotes.value[index]?.note ?? "",
-            chord: entry.chord,
-            degree: scaleNotes.value[index]?.degree ?? entry.degree,
-        }))
-    );
+    const chords = computed<DisplayChord[]>(() => {
+        // Stack every other scale note and name the chord from the notes it actually contains.
+        const notes = scaleNotes.value;
+        const count = notes.length;
+        return modeFormula.value.map((entry, index) => {
+            const degree = notes[index]?.degree ?? entry.degree;
+            // Stacking every other note of a five-note scale gives quartal shapes, so use the
+            // fullest standard chord on this degree whose notes are all in the scale instead.
+            const contained = count < 6 ? findContainedChord(notes, index) : null;
+            if (contained) {
+                return {
+                    note: notes[index].note,
+                    chord: contained.abbreviation,
+                    degree,
+                    numeral: getRomanNumeral(degree, contained.abbreviation),
+                    tones: contained.tones,
+                };
+            }
+            const stacked = [index, index + 2, index + 4, count === 6 ? index + 5 : index + 6]
+                .map((noteIndex) => notes[noteIndex % count])
+                .filter(Boolean);
+            const rootPitchClassValue = stacked[0]?.pitchClass ?? 0;
+            const semitones = stacked.map((tone) => (tone.pitchClass - rootPitchClassValue + 12) % 12);
+            const match = findChordBySemitones(semitones, entry.chord);
+            const order = stacked.map((_, toneIndex) => toneIndex);
+            // Without a chord name, list the formula low to high so it reads like one: (♭3 4 ♭7).
+            if (!match) order.sort((left, right) => semitones[left] - semitones[right]);
+            const chord = match?.abbreviation ?? `(${order.slice(1).map((toneIndex) => SEMITONE_INTERVALS[semitones[toneIndex]]).join(" ")})`;
+            const tones = order.map((toneIndex) => ({
+                ...stacked[toneIndex],
+                interval: match?.intervals[toneIndex] ?? SEMITONE_INTERVALS[semitones[toneIndex]],
+            }));
+            return {
+                note: notes[index]?.note ?? "",
+                chord,
+                degree,
+                numeral: getRomanNumeral(degree, chord),
+                tones,
+            };
+        });
+    });
     const activeChord = computed<number | undefined>(() =>
         input.chord.value == null ? undefined : input.chord.value
     );
-    const chordRoot = computed<string | number | undefined>(() =>
-        input.chord.value ? chords.value[input.chord.value - 1]?.note : undefined
+    const selectedChord = computed(() =>
+        input.chord.value ? chords.value[input.chord.value - 1] : undefined
     );
-    const modeRootNote = computed(() =>
-        getModeRootNote(
-            selectedScaleIndex.value,
-            input.mode.value,
-            input.note.value,
-            input.accidentalPreference.value
-        )
-    );
+    const modeRootNote = computed(() => scaleNotes.value[0]?.note ?? input.note.value);
     const rootPitchClass = computed(() => scaleNotes.value[0]?.pitchClass ?? null);
     const chordRootPitchClass = computed(() =>
-        chordRoot.value == null ? null : getPitchClass(String(chordRoot.value))
+        selectedChord.value ? getPitchClass(selectedChord.value.note) : null
     );
-    const chordExtension = computed<string | number | undefined>(() =>
-        input.chord.value ? chords.value[input.chord.value - 1]?.chord : undefined
-    );
-    const chordIntervals = computed(() =>
-        getChordIntervals(chordExtension.value, chordsByPrimaryAbbreviation())
-    );
-    const chordNotes = computed(() =>
-        getChordNotes(
-            input.chord.value,
-            scaleNotes.value,
-            chordIntervals.value,
-            selectedScaleIndex.value,
-            scales
+    const chordNotes = computed<ChordNotes>(() =>
+        Object.fromEntries(
+            (selectedChord.value?.tones ?? []).map((tone) => [String(tone.pitchClass), tone])
         )
     );
-    const { shapes: threeNpsShapes } = use3nps(
+    // Numbered positions follow the scale degrees on the lowest string, climbing up from the root.
+    const positionSpanFrets = 5;
+    const degreeFrets = computed<number[]>(() => {
+        const lowestPitchClass = getPitchClass(input.tuning.value.data[0]?.note ?? "");
+        const rootPitchClassValue = rootPitchClass.value;
+        if (lowestPitchClass == null || rootPitchClassValue == null) return [];
+        const rootFret = (rootPitchClassValue - lowestPitchClass + 12) % 12;
+        return scaleNotes.value.map((scaleNote) => {
+            const fret = rootFret + ((scaleNote.pitchClass - rootPitchClassValue + 12) % 12);
+            return fret + positionSpanFrets > fretCount ? fret - 12 : fret;
+        });
+    });
+    // A box starts one fret below its degree, so the index finger sits there and the degree falls
+    // under the second finger. Boxes are kept at least two frets apart so neighbours don't overlap
+    // almost entirely, and boxes that run off the neck wrap down an octave below position 1.
+    const positionStartFrets = computed<number[]>(() => {
+        const lowestPitchClass = getPitchClass(input.tuning.value.data[0]?.note ?? "");
+        const rootPitchClassValue = rootPitchClass.value;
+        if (lowestPitchClass == null || rootPitchClassValue == null) return [];
+        const rootFret = (rootPitchClassValue - lowestPitchClass + 12) % 12;
+
+        let previous = Number.NEGATIVE_INFINITY;
+        const starts = scaleNotes.value.map((scaleNote) => {
+            const fret = rootFret + ((scaleNote.pitchClass - rootPitchClassValue + 12) % 12);
+            previous = Math.max(fret - 1, previous + 2, 0);
+            return previous;
+        });
+        const wrapped = starts.map((start) =>
+            start + positionSpanFrets > fretCount ? start - 12 : start
+        );
+        for (let index = wrapped.length - 1; index > 0; index--) {
+            if (wrapped[index] === starts[index]) break;
+            const next = index === wrapped.length - 1 ? wrapped[0] : wrapped[index + 1];
+            wrapped[index] = Math.max(Math.min(wrapped[index], next - 2), 0);
+        }
+        return wrapped;
+    });
+    const { shapes: threeNpsShapes, notesPerString: shapeNotesPerString } = use3nps(
         scaleNotes,
         computed(() => input.tuning.value.data),
-        fretCount
+        fretCount,
+        degreeFrets
     );
     const {
-        minStartFret: minPositionStartFret,
         safeStartFret: safePositionStartFret,
         safeSpan: safePositionSpan,
-        maxStartFret: maxPositionStartFret,
-        renderedSpan: renderedPositionSpan,
     } = usePositionView(
         input.positionStartFret,
         input.positionSpan,
         computed(() => fretCount)
     );
     const show3nps = computed(() => input.viewMode.value === "3nps");
-    const showPosition = computed(() => input.viewMode.value === "position");
-    const activeThreeNpsShape = computed<number[][]>(() => {
-        if (!threeNpsShapes.value.length) return [];
-        const maxIndex = threeNpsShapes.value.length - 1;
-        const safeIndex = Math.min(Math.max(input.threeNpsShapeIndex.value, 0), maxIndex);
-        return threeNpsShapes.value[safeIndex];
-    });
-    const title = computed(() => {
-        const modeLabel = modeOptions.value[input.mode.value - 1]?.label;
-        let nextTitle = modeLabel
-            ? `Scale: ${modeRootNote.value} ${modeLabel}`
-            : `Scale: ${input.note.value}-${input.scale.value}`;
-        if (modeLabel && input.mode.value > 1) {
-            nextTitle += ` (from ${input.note.value} ${input.scale.value})`;
-        }
-        if (input.chord.value) {
-            nextTitle += ` / chord: ${chordRoot.value ?? ""}${chordExtension.value ?? ""}`;
-        }
-        return nextTitle;
-    });
-
+    const positionCount = computed(() => scaleNotes.value.length);
+    const activePosition = computed<number | null>(() =>
+        input.viewMode.value === "full" ? null : input.threeNpsShapeIndex.value
+    );
+    const positionStyle = ref<PositionStyle>(input.viewMode.value === "3nps" ? "3nps" : "box");
+    const activeThreeNpsShape = computed<number[][]>(
+        () => threeNpsShapes.value[input.threeNpsShapeIndex.value] ?? []
+    );
+    const modeName = computed(
+        () => modeOptions.value[input.mode.value - 1]?.label.split(" / ")[0] ?? ""
+    );
+    const heading = computed(() => `${formatNoteLabel(modeRootNote.value)} ${modeName.value}`.trim());
+    const subheading = computed(
+        () =>
+            `Mode ${input.mode.value} of ${formatNoteLabel(parentNote.value)} ${selectedScale.value?.name ?? input.scale.value}`
+    );
     watch(safePositionStartFret, (value) => {
         input.syncPositionStart(value);
     }, { immediate: true });
@@ -187,71 +270,56 @@ export function useFretboardState(input: {
     watch(() => input.threeNpsShapeIndex.value, (value) => {
         input.syncShapeIndex(value);
     }, { immediate: true });
-    watch(threeNpsShapes, (shapes) => {
-        if (!shapes.length) {
-            input.syncShapeIndex(0);
-            return;
-        }
-        if (input.threeNpsShapeIndex.value > shapes.length - 1) {
-            input.syncShapeIndex(shapes.length - 1);
+    watch(positionCount, (count) => {
+        if (input.threeNpsShapeIndex.value > count - 1) {
+            input.syncShapeIndex(Math.max(count - 1, 0));
         }
     });
+    // Box positions follow the key, scale and tuning.
+    watch(
+        [() => input.viewMode.value, () => positionStartFrets.value[input.threeNpsShapeIndex.value]],
+        ([viewMode, startFret]) => {
+            if (viewMode !== "position" || startFret == null) return;
+            input.positionStartFret.value = startFret;
+            input.positionSpan.value = positionSpanFrets;
+        },
+        { immediate: true }
+    );
 
     function toggleChord(index: number) {
         input.chord.value = input.chord.value === index + 1 ? null : index + 1;
     }
 
-    function next3npsShape() {
-        if (!threeNpsShapes.value.length) return;
-        input.syncShapeIndex(
-            (input.threeNpsShapeIndex.value + 1) % threeNpsShapes.value.length
-        );
-    }
-
-    function prev3npsShape() {
-        if (!threeNpsShapes.value.length) return;
-        input.syncShapeIndex(
-            (input.threeNpsShapeIndex.value - 1 + threeNpsShapes.value.length) %
-            threeNpsShapes.value.length
-        );
-    }
-
-    function nextPosition() {
-        if (
-            renderedPositionSpan.value < safePositionSpan.value &&
-            safePositionStartFret.value >= 0
-        ) return;
-        input.positionStartFret.value = Math.min(
-            safePositionStartFret.value + safePositionSpan.value,
-            maxPositionStartFret.value
-        );
-    }
-
-    function prevPosition() {
-        if (
-            renderedPositionSpan.value < safePositionSpan.value &&
-            safePositionStartFret.value < 0
-        ) return;
-        input.positionStartFret.value = Math.max(
-            safePositionStartFret.value - safePositionSpan.value,
-            minPositionStartFret.value
-        );
-    }
-
-    function resetPositionToRoot() {
-        const lowestString = input.tuning.value.data[0];
-        if (!lowestString) return;
-        for (let fret = 0; fret < fretCount; fret++) {
-            if (
-                getPitchClass(
-                    getNoteByOffset(lowestString.note, fret, resolvedAccidentalPreference.value)
-                ) === rootPitchClass.value
-            ) {
-                input.positionStartFret.value = fret;
-                return;
-            }
+    function selectPosition(index: number | null) {
+        if (index == null) {
+            input.viewMode.value = "full";
+            return;
         }
-        input.positionStartFret.value = 0;
+        input.syncShapeIndex(index);
+        input.viewMode.value = positionStyle.value === "3nps" ? "3nps" : "position";
+    }
+
+    function setPositionStyle(style: PositionStyle) {
+        positionStyle.value = style;
+        if (activePosition.value != null) selectPosition(activePosition.value);
+    }
+
+    let playTimers: ReturnType<typeof setTimeout>[] = [];
+    function playScale() {
+        playTimers.forEach(clearTimeout);
+        const rootPitchClassValue = rootPitchClass.value;
+        if (rootPitchClassValue == null) return;
+        // Start from the root in octave 3 (MIDI 48 = C3).
+        const rootMidi = 48 + rootPitchClassValue;
+        const sequence = [...scaleNotes.value, scaleNotes.value[0]].map((scaleNote, index, all) => {
+            const offset = index === all.length - 1
+                ? 12
+                : (scaleNote.pitchClass - rootPitchClassValue + 12) % 12;
+            return { note: scaleNote.note, octave: Math.floor((rootMidi + offset) / 12) - 1 };
+        });
+        playTimers = sequence.map((step, index) =>
+            setTimeout(() => playTone(step.note, step.octave), index * 280)
+        );
     }
 
     return {
@@ -260,31 +328,138 @@ export function useFretboardState(input: {
             input.chord.value == null ? {} : chordNotes.value
         ),
         accidentalPreferenceOptions,
+        activePosition,
         activeThreeNpsShape,
         chordRootPitchClass,
         chords,
         fretCount,
-        maxPositionStartFret,
-        minPositionStartFret,
+        heading,
         modeOptions,
-        next3npsShape,
-        nextPosition,
         noteNamesOptions,
         noteVisibilityOptions,
         notesOptions,
-        prev3npsShape,
-        prevPosition,
-        resetPositionToRoot,
+        playScale,
+        positionCount,
+        positionStyle,
         resolvedAccidentalPreference,
         rootPitchClass,
         safePositionSpan,
         safePositionStartFret,
         scaleNotes,
         scalesOptions,
+        selectPosition,
+        setPositionStyle,
+        shapeNotesPerString,
         show3nps,
-        showPosition,
-        title,
+        subheading,
         toggleChord,
-        viewModeOptions,
     };
+}
+
+// F, B♭, E♭, A♭, D♭: parent keys that are written with flats.
+const FLAT_KEY_PITCH_CLASSES = [5, 10, 3, 8, 1];
+const KEY_NAMES = ["C", "Db", "D", "Eb", "E", "F", "F♯", "G", "Ab", "A", "Bb", "B"];
+
+interface DisplayChord {
+    note: string;
+    chord: string;
+    degree: string;
+    numeral: string;
+    tones: (ScaleNote & { interval?: string })[];
+}
+
+const INTERVAL_SEMITONES: Record<string, number> = {
+    "1": 0, "♭2": 1, "2": 2, "♭3": 3, "3": 4, "4": 5, "♭5": 6, "5": 7,
+    "♯5": 8, "♭6": 8, "6": 9, "♭♭7": 9, "♭7": 10, "7": 11, "♭9": 1, "9": 2, "11": 5, "13": 9,
+};
+const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+const LETTER_PITCH_CLASSES = [0, 2, 4, 5, 7, 9, 11];
+
+function spellByLetter(notes: ScaleNote[]): ScaleNote[] {
+    const rootLetterIndex = LETTERS.indexOf(notes[0]?.note[0] ?? "");
+    if (rootLetterIndex < 0) return notes;
+    const rootPitchClassValue = notes[0].pitchClass;
+    return notes.map((scaleNote, index) => {
+        const letterIndex = (rootLetterIndex + index) % 7;
+        const offset = ((scaleNote.pitchClass - LETTER_PITCH_CLASSES[letterIndex] + 18) % 12) - 6;
+        const accidental = offset === 1 ? "♯" : offset === -1 ? "b" : offset === 0 ? "" : null;
+        const note = `${LETTERS[letterIndex]}${accidental ?? ""}`;
+        const semitones = (scaleNote.pitchClass - rootPitchClassValue + 12) % 12;
+        const degreeOffset = semitones - LETTER_PITCH_CLASSES[index];
+        const degreeAccidental = degreeOffset === 1 ? "♯" : degreeOffset === -1 ? "♭" : degreeOffset === 0 ? "" : null;
+        return {
+            ...scaleNote,
+            // E♯, C♭ and double accidentals aren't supported elsewhere, so keep the enharmonic name there.
+            note: accidental != null && getPitchClass(note) === scaleNote.pitchClass ? note : scaleNote.note,
+            degree: degreeAccidental != null ? `${degreeAccidental}${index + 1}` : scaleNote.degree,
+        };
+    });
+}
+
+const SEMITONE_INTERVALS = ["1", "♭2", "2", "♭3", "3", "4", "♭5", "5", "♯5", "6", "♭7", "7"];
+const FOUR_NOTE_CHORDS = chordDefinitions
+    .filter((chord) => chord.intervals.length === 4)
+    .map((chord) => ({
+        abbreviations: chord.abbreviations,
+        intervals: chord.intervals,
+        key: chord.intervals.map((interval) => INTERVAL_SEMITONES[interval] ?? -1).join(","),
+    }));
+
+// Seventh chords first, then sixths and add9s, then triads, with sus chords last.
+function containedChordScore(intervals: string[], abbreviation: string): number {
+    let score = intervals.length * 10;
+    if (intervals.some((interval) => interval.endsWith("7"))) score += 3;
+    else if (intervals.includes("6")) score += 2;
+    else if (intervals.includes("9")) score += 1;
+    if (abbreviation.startsWith("sus")) score -= 5;
+    return score;
+}
+
+function findContainedChord(notes: ScaleNote[], index: number) {
+    const root = notes[index];
+    if (!root) return null;
+    const byPitchClass = new Map(notes.map((note) => [note.pitchClass, note]));
+    let best: { abbreviation: string; tones: DisplayChord["tones"]; score: number } | null = null;
+    for (const chord of chordDefinitions) {
+        if (chord.intervals.length > 4) continue;
+        const tones = chord.intervals.map((interval) => {
+            const pitchClass = (root.pitchClass + (INTERVAL_SEMITONES[interval] ?? -100) + 12) % 12;
+            const note = byPitchClass.get(pitchClass);
+            return note ? { ...note, interval } : null;
+        });
+        if (tones.some((tone) => tone == null)) continue;
+        const abbreviation = chord.abbreviations[0];
+        const score = containedChordScore(chord.intervals, abbreviation);
+        if (!best || score > best.score) {
+            best = { abbreviation, tones: tones as DisplayChord["tones"], score };
+        }
+    }
+    return best;
+}
+
+function findChordBySemitones(semitones: number[], preferred: string) {
+    const key = semitones.join(",");
+    const matches = FOUR_NOTE_CHORDS.filter((chord) => chord.key === key);
+    const chord = matches.find((entry) => entry.abbreviations.includes(preferred)) ?? matches[0];
+    if (!chord) return null;
+    return {
+        abbreviation: chord.abbreviations.includes(preferred) ? preferred : chord.abbreviations[0],
+        intervals: chord.intervals,
+    };
+}
+
+const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
+
+function getRomanNumeral(degree: string, chord: string): string {
+    const accidental = degree.match(/^[♭♯]/)?.[0] ?? "";
+    const degreeNumber = Number.parseInt(degree.replace(/^[♭♯]/, ""), 10);
+    const numeral = ROMAN_NUMERALS[degreeNumber - 1] ?? degree;
+    const isMinor = /^(m(?!aj)|dim)/.test(chord) || (chord.startsWith("(") && chord.includes("♭3"));
+    let suffix = chord;
+    if (chord === "m7♭5") suffix = "ø7";
+    else if (chord.startsWith("dim")) suffix = chord.replace("dim", "°");
+    else if (chord.startsWith("aug")) suffix = chord.replace("aug", "+");
+    else if (chord.startsWith("mMaj")) suffix = chord.replace("mMaj", "maj");
+    else if (isMinor && !chord.startsWith("(")) suffix = chord.slice(1);
+    return `${accidental}${isMinor ? numeral.toLowerCase() : numeral}${suffix}`;
 }

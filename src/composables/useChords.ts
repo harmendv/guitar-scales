@@ -1,4 +1,4 @@
-import { computed, ComputedRef } from "vue";
+import { computed, type ComputedRef } from "vue";
 import type { ScaleFormulaEntry, Scale } from "@/composables/useScales";
 import type { ScaleNote } from "@/composables/useNotes";
 
@@ -39,6 +39,12 @@ const chords: Chord[] = [
         name: "Major 7th",
         abbreviations: ["maj7", "M7", "Δ7"],
         intervals: ["1", "3", "5", "7"],
+    },
+    {
+        id: 28,
+        name: "Major 7th flat fifth",
+        abbreviations: ["maj7♭5"],
+        intervals: ["1", "3", "♭5", "7"],
     },
     {
         id: 5,
