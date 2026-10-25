@@ -1,7 +1,8 @@
 import { computed, ref, watch } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
 import { useCustomTunings } from "@/composables/useCustomTunings";
-import type { AccidentalPreference } from "@/composables/useNotes";
+import { getModeRootNote, type AccidentalPreference } from "@/composables/useNotes";
+import { scalesFlatMap } from "@/composables/useScales";
 import {
     builtInTunings,
     deserializeTuning,
@@ -21,9 +22,19 @@ export function useAppState() {
     } = useCustomTunings();
     const defaultTuning = builtInTunings[0];
 
-    const note = ref<string>((params.note as string) || "C");
     const scale = ref<string>((params.scale as string) || "major");
     const mode = ref<number>(Number.parseInt(params.mode as string, 10) || 1);
+    // `root` is the mode's root. Older links used `note` for the parent key, so convert those.
+    const note = ref<string>(
+        (params.root as string) ||
+            (params.note
+                ? getModeRootNote(
+                      scalesFlatMap.indexOf(scale.value),
+                      mode.value,
+                      params.note as string
+                  ) || (params.note as string)
+                : "C")
+    );
     const chord = ref<number | null>(
         params.chord ? Number.parseInt(params.chord as string, 10) : null
     );
@@ -103,11 +114,17 @@ export function useAppState() {
         () => Boolean(draftTuning.value.id) && tuning.value.source === "custom"
     );
 
-    watch(note, (value) => {
-        params.note = value;
-    });
+    watch(
+        note,
+        (value) => {
+            params.root = value;
+            delete params.note;
+        },
+        { immediate: true }
+    );
     watch(scale, (value) => {
         mode.value = 1;
+        chord.value = null;
         params.scale = value;
     });
     watch(mode, (value) => {

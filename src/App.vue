@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { Label } from "@/components/ui/label";
 import { Fretboard } from "@/components/ui/fretboard";
 import DialogTuningEditor from "@/components/tuning-editor/Dialog.TuningEditor.vue";
 import AppFooter from "@/components/app/AppFooter.vue";
+import AppHeader from "@/components/app/AppHeader.vue";
+import { Logo } from "@/components/ui/logo";
 import ChordPanel from "@/components/app/ChordPanel.vue";
+import PickerBar from "@/components/app/PickerBar.vue";
 import ScaleControls from "@/components/app/ScaleControls.vue";
 import TuningControls from "@/components/app/TuningControls.vue";
 import ViewModeControls from "@/components/app/ViewModeControls.vue";
@@ -44,32 +46,31 @@ const {
     activeChord,
     activeFretboardChordNotes,
     accidentalPreferenceOptions,
+    activePosition,
     activeThreeNpsShape,
     chordRootPitchClass,
     chords,
     fretCount,
-    maxPositionStartFret,
-    minPositionStartFret,
+    heading,
     modeOptions,
-    next3npsShape,
-    nextPosition,
     noteNamesOptions,
     noteVisibilityOptions,
     notesOptions,
-    prev3npsShape,
-    prevPosition,
+    playScale,
+    positionCount,
+    positionStyle,
     resolvedAccidentalPreference,
-    resetPositionToRoot,
     rootPitchClass,
     safePositionSpan,
     safePositionStartFret,
     scaleNotes,
     scalesOptions,
+    selectPosition,
+    setPositionStyle,
+    shapeNotesPerString,
     show3nps,
-    showPosition,
-    title,
+    subheading,
     toggleChord,
-    viewModeOptions,
 } = useFretboardState({
     accidentalPreference,
     chord,
@@ -85,49 +86,76 @@ const {
     tuning,
     viewMode,
 });
+
 </script>
 
 <template>
-    <div class="w-full max-w-[1300px] mx-auto flex flex-col p-4 lg:p-10">
-        <Label class="mb-4">{{ title }}</Label>
+    <div class="mx-auto flex w-full max-w-[1300px] flex-col gap-6 px-4 pt-8 pb-28 sm:pb-8 lg:px-10 lg:py-12">
+        <a href="/" class="flex w-fit items-center gap-2 text-primary">
+            <Logo class="h-7 w-auto" />
+            <span class="font-display text-xl font-bold tracking-tight">Guitar Scales</span>
+        </a>
 
-        <Fretboard
-            :strings="tuning.data"
+        <AppHeader
+            :heading="heading"
+            :subheading="subheading"
             :scale-notes="scaleNotes"
-            :frets="fretCount"
-            :shape-active="show3nps"
-            :shape-frets-by-string="activeThreeNpsShape"
-            :view-mode="viewMode"
-            :position-start-fret="safePositionStartFret"
-            :position-span="safePositionSpan"
-            :note-preference="resolvedAccidentalPreference"
-            :chord-root-pitch-class="chordRootPitchClass"
-            :chord-notes="activeFretboardChordNotes"
-            :show-degrees="noteNames === 'degrees'"
-            :root-pitch-class="rootPitchClass"
-            :show-rest="noteVisibility === 'all'"
-            class="mb-8"
-        />
+            @play="playScale"
+        >
+            <TuningControls
+                v-model:selected-tuning-id="selectedTuningId"
+                :can-edit-selected-tuning="canEditSelectedTuning"
+                :tuning="tuning"
+                :tuning-options="tuningOptions"
+                @create="openCreateCustomTuning"
+                @edit="openEditCustomTuning"
+            />
+        </AppHeader>
 
         <ViewModeControls
-            v-model:accidental-preference="accidentalPreference"
-            v-model:view-mode="viewMode"
-            v-model:position-start-fret="positionStartFret"
-            v-model:position-span="positionSpan"
-            :accidental-preference-options="accidentalPreferenceOptions"
-            :fret-count="fretCount"
-            :max-position-start-fret="maxPositionStartFret"
-            :min-position-start-fret="minPositionStartFret"
-            :show-3nps="show3nps"
-            :show-position="showPosition"
-            :three-nps-shapes-count="activeThreeNpsShape.length"
-            :view-mode-options="viewModeOptions"
-            @next-3nps-shape="next3npsShape"
-            @prev-3nps-shape="prev3npsShape"
-            @next-position="nextPosition"
-            @prev-position="prevPosition"
-            @reset-position-to-root="resetPositionToRoot"
+            v-model:note-names="noteNames"
+            v-model:note-visibility="noteVisibility"
+            :active-position="activePosition"
+            :note-names-options="noteNamesOptions"
+            :note-visibility-options="noteVisibilityOptions"
+            :position-count="positionCount"
+            :position-style="positionStyle"
+            :shape-notes-per-string="shapeNotesPerString"
+            @select-position="selectPosition"
+            @set-position-style="setPositionStyle"
         />
+
+        <div>
+            <Fretboard
+                :strings="tuning.data"
+                :scale-notes="scaleNotes"
+                :frets="fretCount"
+                :shape-active="show3nps"
+                :shape-frets-by-string="activeThreeNpsShape"
+                :view-mode="viewMode"
+                :position-start-fret="safePositionStartFret"
+                :position-span="safePositionSpan"
+                :note-preference="resolvedAccidentalPreference"
+                :chord-root-pitch-class="chordRootPitchClass"
+                :chord-notes="activeFretboardChordNotes"
+                :show-degrees="noteNames === 'degrees'"
+                :show-labels="noteNames !== 'dots'"
+                :root-pitch-class="rootPitchClass"
+                :show-rest="noteVisibility === 'all'"
+            />
+            <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
+                <span class="flex items-center gap-1.5">
+                    <span class="size-2.5 rounded-full bg-tone-root"></span>Root
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="size-2.5 rounded-full border border-foreground/15 bg-tone-scale"></span>Scale tone
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="size-2.5 rounded-full bg-tone-chord"></span>Chord tone
+                </span>
+                <span>Tap a note to hear it</span>
+            </div>
+        </div>
 
         <ChordPanel
             :active-chord="activeChord"
@@ -135,26 +163,33 @@ const {
             @toggle="toggleChord"
         />
 
-        <ScaleControls
+        <!-- On phones these live in the sticky bottom bar instead -->
+        <div class="hidden flex-col gap-6 sm:flex">
+            <hr class="my-2" />
+
+            <ScaleControls
+                v-model:note="note"
+                v-model:scale="scale"
+                v-model:mode="mode"
+                v-model:accidental-preference="accidentalPreference"
+                :accidental-preference-options="accidentalPreferenceOptions"
+                :mode-options="modeOptions"
+                :notes-options="notesOptions"
+                :scales-options="scalesOptions"
+            />
+        </div>
+
+        <PickerBar
             v-model:note="note"
             v-model:scale="scale"
             v-model:mode="mode"
-            v-model:note-names="noteNames"
-            v-model:note-visibility="noteVisibility"
+            v-model:accidental-preference="accidentalPreference"
+            :accidental-preference-options="accidentalPreferenceOptions"
             :mode-options="modeOptions"
-            :note-names-options="noteNamesOptions"
-            :note-visibility-options="noteVisibilityOptions"
             :notes-options="notesOptions"
             :scales-options="scalesOptions"
-        >
-            <TuningControls
-                v-model:selected-tuning-id="selectedTuningId"
-                :can-edit-selected-tuning="canEditSelectedTuning"
-                :tuning-options="tuningOptions"
-                @create="openCreateCustomTuning"
-                @edit="openEditCustomTuning"
-            />
-        </ScaleControls>
+        />
+
 
         <DialogTuningEditor
             v-if="isEditingCustomTuning"
@@ -166,6 +201,6 @@ const {
             @delete="onDeleteCustomTuning"
         />
 
-        <AppFooter />
+        <AppFooter class="mt-6" />
     </div>
 </template>

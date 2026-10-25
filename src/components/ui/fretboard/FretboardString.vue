@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { playTone } from "@/composables/useAudio";
 import {
+    formatNoteLabel,
     getNoteByOffset,
     getPitchClass,
     type ResolvedAccidentalPreference,
@@ -9,6 +10,8 @@ import {
 } from "@/composables/useNotes";
 import { type ChordNotes } from "@/composables/useChords";
 import { cn } from "@/lib/utils";
+
+type NoteKind = "root" | "chord" | "scale" | "muted" | "other";
 
 const props = withDefaults(
     defineProps<{
@@ -21,13 +24,14 @@ const props = withDefaults(
         viewMode?: "full" | "3nps" | "position";
         positionStartFret?: number;
         positionSpan?: number;
-        degrees?: Record<string, string>;
         notePreference?: ResolvedAccidentalPreference;
         showDegrees?: boolean | string;
+        showLabels?: boolean;
         showRest?: boolean | string;
         rootPitchClass?: number | null;
         chordRootPitchClass?: number | null;
         chordNotes?: ChordNotes;
+        thickness?: number;
     }>(),
     {
         frets: 19,
@@ -37,13 +41,14 @@ const props = withDefaults(
         viewMode: "full",
         positionStartFret: 0,
         positionSpan: 5,
-        degrees: () => ({}),
         notePreference: "sharp",
         showDegrees: false,
+        showLabels: true,
         showRest: false,
         rootPitchClass: null,
         chordRootPitchClass: null,
         chordNotes: () => ({}),
+        thickness: 1,
     }
 );
 
@@ -57,105 +62,85 @@ const highlightByPitchClass = computed(() => {
 
 const notes = computed(() => {
     let octave = props.startOctave;
-    const chordShapeOnlyMode =
-        props.chordRootPitchClass != null && props.shapeActive;
+    const chordActive = props.chordRootPitchClass != null;
     const positionEndFret = props.positionStartFret + props.positionSpan - 1;
-    const isPositionMode = props.viewMode === "position";
 
-    const notesArr = Array.from({ length: props.frets }, (_, i) => {
+    return Array.from({ length: props.frets }, (_, i) => {
         const note = getNoteByOffset(props.start, i, props.notePreference);
         const pitchClass = getPitchClass(note);
         if (note === "C" && i !== 0) octave++;
-        const highlightedNote =
-            pitchClass == null
-                ? undefined
-                : highlightByPitchClass.value.get(pitchClass);
-        const isShapeFret = props.shapeFrets.includes(i);
-        const inActivePosition =
-            i >= props.positionStartFret && i <= positionEndFret;
-        const highlightInCurrentView = isPositionMode ? inActivePosition : true;
+        const scaleNote =
+            pitchClass == null ? undefined : highlightByPitchClass.value.get(pitchClass);
+        const chordNote = pitchClass == null ? undefined : props.chordNotes[String(pitchClass)];
+        const rootPitchClass = chordActive ? props.chordRootPitchClass : props.rootPitchClass;
+
+        let kind: NoteKind = "other";
+        if (pitchClass != null && pitchClass === rootPitchClass) kind = "root";
+        else if (chordActive && chordNote) kind = "chord";
+        else if (scaleNote) kind = chordActive ? "muted" : "scale";
+
+        const inView =
+            props.viewMode === "position"
+                ? i >= props.positionStartFret && i <= positionEndFret
+                : props.shapeActive
+                  ? props.shapeFrets.includes(i)
+                  : true;
+
+        // Use the scale's own spelling (E♭ in C Dorian), even if the neck defaults to sharps.
+        let label: string = formatNoteLabel(scaleNote?.note ?? note);
+        if (props.showDegrees) {
+            if (chordActive && chordNote?.interval) label = chordNote.interval;
+            else if (!chordActive && scaleNote) label = scaleNote.degree;
+        }
+
         return {
             name: note,
-            pitchClass,
             octave,
-            highlight:
-                props.chordRootPitchClass != null && pitchClass != null
-                    ? chordShapeOnlyMode
-                        ? Boolean(props.chordNotes[String(pitchClass)]) &&
-                          isShapeFret &&
-                          highlightInCurrentView
-                        : Boolean(props.chordNotes[String(pitchClass)]) &&
-                          highlightInCurrentView
-                    : props.shapeActive
-                      ? Boolean(highlightedNote) &&
-                        isShapeFret &&
-                        highlightInCurrentView
-                      : Boolean(highlightedNote) && highlightInCurrentView,
-            root:
-                pitchClass != null &&
-                (props.chordRootPitchClass != null
-                    ? pitchClass === props.chordRootPitchClass
-                    : pitchClass === props.rootPitchClass) &&
-                highlightInCurrentView,
-            degree: highlightedNote?.degree ?? false,
+            kind,
+            label,
+            inView,
+            visible: Boolean(props.showRest) || (inView && kind !== "other"),
         };
     });
-    return notesArr;
 });
+
+const kindClasses: Record<NoteKind, string> = {
+    root: "bg-tone-root text-white shadow-[0_0_0_4px_rgb(245_48_3/0.3)]",
+    chord: "bg-tone-chord text-[#10213d] shadow-[0_0_0_4px_rgb(147_187_247/0.22)]",
+    scale: "bg-tone-scale text-[#2a2420]",
+    muted: "bg-[#ece6d6]/35 text-white/70",
+    other: "bg-white/[0.07] text-white/30 font-medium",
+};
 </script>
 
 <template>
-    <div
-        class="relative w-full flex justify-between"
-        :style="`--divider: ${frets};`"
-    >
+    <div class="relative grid h-11" style="grid-template-columns: var(--fret-columns)">
+        <div
+            class="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 bg-[var(--guitar-string)] shadow-[0_1px_1px_rgb(0_0_0/0.5)]"
+            :style="{ height: `${thickness}px` }"
+        ></div>
         <div
             v-for="(note, index) in notes"
             :key="index"
-            class="flex-grow text-center p-2 flex justify-center border-r-2 border-slate-300 dark:border-slate-900 relative first:border-r-4 first:bg-slate-200 dark:first:bg-slate-700 last:border-r-0"
+            class="relative flex items-center justify-center"
         >
-            <div
-                class="absolute left-0 top-1/2 w-full h-0.5 bg-slate-300 dark:bg-slate-900 z-10"
-            ></div>
-            <div
+            <button
+                type="button"
+                :tabindex="note.visible ? 0 : -1"
+                :aria-label="`${note.name}${note.octave}`"
                 :class="
-                    cn([
-                        'relative bg-slate-100 dark:bg-slate-800 z-10 w-6 h-6 lg:w-8 lg:h-8 flex font-mono text-xs lg:text-sm font-bold items-center justify-center rounded-full text-slate-400 dark:text-slate-500 border-1 border-transparent flex-shrink-0 transition cursor-pointer hover:scale-110',
-                        note.highlight
-                            ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 border-indigo-600 dark:text-indigo-100 shadow-lg'
-                            : '',
-                        note.root && (!shapeActive || note.highlight)
-                            ? 'bg-red-100 dark:bg-red-950 text-red-600 border-red-700'
-                            : '',
-                        !note.highlight && showRest !== true ? 'opacity-0' : '',
-                        note.degree === 'scale' ? 'bg-slate-400' : '',
-                    ])
+                    cn(
+                        'relative z-10 flex shrink-0 cursor-pointer items-center justify-center rounded-full tabular-nums text-[10px] font-semibold transition hover:scale-110 outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        showLabels ? 'size-[26px]' : 'size-3.5',
+                        kindClasses[note.kind],
+                        !note.inView && note.kind !== 'other' ? 'opacity-30 shadow-none' : '',
+                        !note.visible ? 'pointer-events-none opacity-0' : '',
+                    )
                 "
                 @click="playTone(note.name, note.octave)"
             >
-                <div
-                    class="absolute w-full h-full flex items-center justify-center top-0"
-                >
-                    <template
-                        v-if="
-                            chordRootPitchClass != null &&
-                            showDegrees &&
-                            chordNotes[String(note.pitchClass)]?.interval
-                        "
-                    >
-                        {{ chordNotes[String(note.pitchClass)].interval }}
-                    </template>
-                    <template v-else-if="chordRootPitchClass != null">
-                        {{ note.name }}
-                    </template>
-                    <template v-else-if="showDegrees && note.degree">
-                        {{ note.degree }}
-                    </template>
-                    <template v-else>
-                        {{ note.name }}
-                    </template>
-                </div>
-            </div>
+                <template v-if="showLabels">{{ note.label }}</template>
+            </button>
         </div>
     </div>
 </template>

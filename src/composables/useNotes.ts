@@ -202,3 +202,7 @@ export function getModeRootNote(
     if (!modeEntry) return "";
     return getNoteByOffset(note, modeEntry.chromatic - 1, preference);
 }
+
+export function formatNoteLabel(note: string): string {
+    return note.replace(/^([A-G])b/, "$1♭");
+}

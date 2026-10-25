@@ -1,132 +1,97 @@
 <script setup lang="ts">
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import type { FretboardViewMode } from "@/composables/useAppState";
+import { computed, ref } from "vue";
+import { SlidersHorizontal } from "lucide-vue-next";
+import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from "reka-ui";
+import { Segmented } from "@/components/ui/segmented";
+import { useEdgeFade } from "@/composables/useEdgeFade";
+import type { PositionStyle } from "@/composables/useFretboardState";
 
-defineProps<{
-    accidentalPreferenceOptions: { label: string; value: string }[];
-    fretCount: number;
-    maxPositionStartFret: number;
-    minPositionStartFret: number;
-    positionSpan: number;
-    show3nps: boolean;
-    showPosition: boolean;
-    threeNpsShapesCount: number;
-    viewModeOptions: { label: string; value: FretboardViewMode }[];
+const props = defineProps<{
+    activePosition: number | null;
+    noteNamesOptions: { label: string; value: string }[];
+    noteVisibilityOptions: { label: string; value: string }[];
+    positionCount: number;
+    positionStyle: PositionStyle;
+    shapeNotesPerString: number;
 }>();
 
-const accidentalPreference = defineModel<string>("accidentalPreference", { required: true });
-const viewMode = defineModel<FretboardViewMode>("viewMode", { required: true });
-const positionStartFret = defineModel<number>("positionStartFret", { required: true });
-const positionSpanModel = defineModel<number>("positionSpan", { required: true });
+const noteNames = defineModel<string>("noteNames", { required: true });
+const noteVisibility = defineModel<string>("noteVisibility", { required: true });
 
-defineEmits<{
-    next3npsShape: [];
-    nextPosition: [];
-    prev3npsShape: [];
-    prevPosition: [];
-    resetPositionToRoot: [];
+const emit = defineEmits<{
+    selectPosition: [index: number | null];
+    setPositionStyle: [style: PositionStyle];
 }>();
+
+const position = computed<number>({
+    get: () => props.activePosition ?? -1,
+    set: (value) => emit("selectPosition", value < 0 ? null : value),
+});
+const style = computed<PositionStyle>({
+    get: () => props.positionStyle,
+    set: (value) => emit("setPositionStyle", value),
+});
+
+const positionOptions = computed(() => [
+    { label: "Full neck", value: -1 },
+    ...Array.from({ length: props.positionCount }, (_, index) => ({
+        label: String(index + 1),
+        value: index,
+    })),
+]);
+const positionRow = ref<HTMLElement | null>(null);
+const edgeFade = useEdgeFade(positionRow);
+
+const styleOptions = computed<{ label: string; value: PositionStyle }[]>(() => [
+    { label: "Box", value: "box" },
+    { label: `${props.shapeNotesPerString}NPS`, value: "3nps" },
+]);
 </script>
 
 <template>
-    <div class="flex flex-wrap items-end gap-3 mb-8">
-        <div class="flex flex-col gap-2">
-            <Label>Accidentals</Label>
-            <Select v-model="accidentalPreference">
-                <SelectTrigger class="w-32">
-                    <SelectValue placeholder="Accidentals" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="option in accidentalPreferenceOptions"
-                        :key="option.value"
-                        :value="option.value"
-                    >
-                        {{ option.label }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
+    <div class="flex items-center gap-2 sm:flex-wrap sm:justify-between sm:gap-3">
+        <div class="hidden flex-wrap items-center gap-3 sm:flex">
+            <Segmented v-model="noteNames" :options="noteNamesOptions" />
+            <Segmented v-model="noteVisibility" :options="noteVisibilityOptions" />
         </div>
-        <div class="flex flex-col gap-2">
-            <Label>View</Label>
-            <Select v-model="viewMode">
-                <SelectTrigger class="w-40">
-                    <SelectValue placeholder="View mode" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem
-                        v-for="option in viewModeOptions"
-                        :key="option.value"
-                        :value="option.value"
-                    >
-                        {{ option.label }}
-                    </SelectItem>
-                </SelectContent>
-            </Select>
+
+        <!-- Phones: the display toggles fold into a popover so the neck controls fit on one row -->
+        <PopoverRoot>
+            <PopoverTrigger
+                class="inline-flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:text-foreground sm:hidden"
+                aria-label="Display options"
+            >
+                <SlidersHorizontal :size="16" />
+            </PopoverTrigger>
+            <PopoverPortal>
+                <PopoverContent
+                    side="bottom"
+                    align="start"
+                    :side-offset="6"
+                    class="z-50 flex flex-col gap-3 rounded-xl border bg-popover p-3 text-popover-foreground shadow-lg"
+                >
+                    <div class="flex flex-col gap-1.5">
+                        <span class="section-label">Labels</span>
+                        <Segmented v-model="noteNames" :options="noteNamesOptions" />
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <span class="section-label">Show</span>
+                        <Segmented v-model="noteVisibility" :options="noteVisibilityOptions" />
+                    </div>
+                </PopoverContent>
+            </PopoverPortal>
+        </PopoverRoot>
+
+        <div
+            ref="positionRow"
+            :style="edgeFade"
+            class="edge-fade no-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto sm:[mask-image:none] sm:max-w-full sm:flex-none sm:flex-wrap sm:gap-3 sm:overflow-visible">
+            <Segmented
+                v-model="style"
+                :options="styleOptions"
+                :class="activePosition == null ? 'shrink-0 opacity-60' : 'shrink-0'"
+            />
+            <Segmented v-model="position" :options="positionOptions" class="shrink-0" />
         </div>
-        <Button
-            v-if="show3nps"
-            variant="outline"
-            :disabled="!threeNpsShapesCount"
-            @click="$emit('prev3npsShape')"
-        >
-            Prev Shape
-        </Button>
-        <Button
-            v-if="show3nps"
-            variant="outline"
-            :disabled="!threeNpsShapesCount"
-            @click="$emit('next3npsShape')"
-        >
-            Next Shape
-        </Button>
-        <template v-if="showPosition">
-            <Button
-                variant="outline"
-                @click="$emit('prevPosition')"
-            >
-                Prev Position
-            </Button>
-            <Button
-                variant="outline"
-                @click="$emit('nextPosition')"
-            >
-                Next Position
-            </Button>
-            <Button
-                variant="outline"
-                @click="$emit('resetPositionToRoot')"
-            >
-                Reset to root
-            </Button>
-            <label class="text-sm flex items-center gap-2">
-                Start
-                <input
-                    v-model.number="positionStartFret"
-                    type="number"
-                    :min="minPositionStartFret"
-                    :max="maxPositionStartFret"
-                    class="w-20 rounded-md border bg-transparent px-2 py-1"
-                />
-            </label>
-            <label class="text-sm flex items-center gap-2">
-                Span
-                <input
-                    v-model.number="positionSpanModel"
-                    type="number"
-                    min="1"
-                    :max="fretCount"
-                    class="w-20 rounded-md border bg-transparent px-2 py-1"
-                />
-            </label>
-        </template>
     </div>
 </template>
