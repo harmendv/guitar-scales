@@ -8,11 +8,14 @@ import {
     SelectTrigger,
 } from "@/components/ui/select";
 import type { Tuning } from "@/composables/useTunings";
+import { cn } from "@/lib/utils";
 
 const props = defineProps<{
     canEditSelectedTuning: boolean;
     tuning: Tuning;
     tuningOptions: Tuning[];
+    // Bordered, full-width version for under its own heading (phones); default is the quiet inline one
+    field?: boolean;
 }>();
 
 const selectedTuningId = defineModel<string>("selectedTuningId", { required: true });
@@ -23,17 +26,30 @@ defineEmits<{
 }>();
 
 const tuningNotes = computed(() => props.tuning.data.map((string) => string.note).join(" "));
+
+const iconButton = computed(() =>
+    cn(
+        "inline-flex shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground",
+        props.field ? "size-10 border bg-card hover:border-foreground/30" : "size-9 hover:bg-surface"
+    )
+);
 </script>
 
 <template>
-    <div class="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none">
+    <div :class="field ? 'flex min-w-0 items-center gap-1.5' : '-mx-2.5 flex min-w-0 items-center gap-0.5 sm:mx-0'">
         <Select v-model="selectedTuningId">
             <SelectTrigger
-                class="h-10 min-w-0 flex-1 data-[size=default]:h-10 rounded-lg sm:flex-none border-border bg-card px-3 text-sm text-foreground shadow-none hover:border-foreground/30 dark:bg-card dark:hover:bg-card"
+                :class="
+                    field
+                        ? 'h-10 min-w-0 flex-1 data-[size=default]:h-10 rounded-lg border-border bg-card px-3 text-sm text-foreground shadow-none hover:border-foreground/30 dark:bg-card dark:hover:bg-card'
+                        : 'h-9 min-w-0 data-[size=default]:h-9 rounded-lg border-transparent bg-transparent px-2.5 text-sm text-foreground shadow-none hover:bg-surface dark:bg-transparent dark:hover:bg-surface'
+                "
                 aria-label="Tuning"
             >
                 <span class="truncate">
-                    {{ tuning.label }} · {{ tuningNotes }}
+                    <span v-if="!field" class="mr-1.5 text-muted-foreground">Tuning</span>
+                    <span class="font-medium">{{ tuning.label }}</span>
+                    <span class="ml-1.5 text-muted-foreground">{{ tuningNotes }}</span>
                 </span>
             </SelectTrigger>
             <SelectContent>
@@ -48,7 +64,7 @@ const tuningNotes = computed(() => props.tuning.data.map((string) => string.note
         </Select>
         <button
             type="button"
-            class="inline-flex size-10 items-center justify-center rounded-lg border bg-card text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+:class="iconButton"
             title="Create custom tuning"
             aria-label="Create custom tuning"
             @click="$emit('create')"
@@ -58,7 +74,7 @@ const tuningNotes = computed(() => props.tuning.data.map((string) => string.note
         <button
             v-if="canEditSelectedTuning"
             type="button"
-            class="inline-flex size-10 items-center justify-center rounded-lg border bg-card text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+:class="iconButton"
             title="Edit selected custom tuning"
             aria-label="Edit selected custom tuning"
             @click="$emit('edit')"

@@ -1,28 +1,36 @@
 <script setup lang="ts">
-import { pill, pillActive, pillIdle } from "./styles";
+import { computed } from "vue";
+import { ChevronDown } from "lucide-vue-next";
+import { SelectRoot, SelectTrigger } from "reka-ui";
+import { SelectContent, SelectItem } from "@/components/ui/select";
+import { splitModeLabel } from "./scaleGroups";
+import { selectTrigger } from "./styles";
 
-defineProps<{
+const props = defineProps<{
     modeOptions: { label: string; value: number }[];
 }>();
 
 const mode = defineModel<number>({ required: true });
 
-defineEmits<{
-    select: [];
-}>();
+const options = computed(() =>
+    props.modeOptions.map((option) => ({ value: option.value, ...splitModeLabel(option.label) }))
+);
+const selected = computed(() => options.value.find((option) => option.value === mode.value));
 </script>
 
 <template>
-    <div class="flex flex-wrap gap-1.5">
-        <button
-            v-for="option in modeOptions"
-            :key="option.label"
-            type="button"
-            :class="[pill, mode === option.value ? pillActive : pillIdle]"
-            @click="mode = option.value; $emit('select')"
-        >
-            <span class="mr-1 tabular-nums text-[10px] opacity-60">{{ option.value }}</span>
-            {{ option.label.split(" / ")[0] }}
-        </button>
-    </div>
+    <SelectRoot v-model="mode">
+        <SelectTrigger :class="selectTrigger" aria-label="Mode">
+            <span class="tabular-nums text-xs text-muted-foreground">{{ selected?.value }}</span>
+            <span class="truncate">{{ selected?.name }}</span>
+            <ChevronDown class="ml-auto size-4 shrink-0 text-muted-foreground" />
+        </SelectTrigger>
+        <SelectContent align="start">
+            <SelectItem v-for="option in options" :key="option.value" :value="option.value">
+                <span class="w-3 tabular-nums text-xs text-muted-foreground">{{ option.value }}</span>
+                {{ option.name }}
+                <span v-if="option.alias" class="text-xs text-muted-foreground">{{ option.alias }}</span>
+            </SelectItem>
+        </SelectContent>
+    </SelectRoot>
 </template>

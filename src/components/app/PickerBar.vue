@@ -11,8 +11,9 @@ import {
 import { Segmented } from "@/components/ui/segmented";
 import { formatNoteLabel } from "@/composables/useNotes";
 import KeyPicker from "./pickers/KeyPicker.vue";
-import ModePicker from "./pickers/ModePicker.vue";
-import ScalePicker from "./pickers/ScalePicker.vue";
+import ModeButtons from "./pickers/ModeButtons.vue";
+import ScaleButtons from "./pickers/ScaleButtons.vue";
+import { splitModeLabel } from "./pickers/scaleGroups";
 
 const props = defineProps<{
     accidentalPreferenceOptions: { label: string; value: string }[];
@@ -46,7 +47,7 @@ const items = computed(() => [
     {
         sheet: "mode" as const,
         label: "Mode",
-        value: props.modeOptions.find((option) => option.value === mode.value)?.label.split(" / ")[0] ?? "",
+        value: splitModeLabel(props.modeOptions.find((option) => option.value === mode.value)?.label ?? "").name,
     },
 ]);
 
@@ -58,23 +59,21 @@ function close() {
 <template>
     <!-- Phones only: Key, Scale and Mode stay in reach while you look at the neck -->
     <nav
-        class="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:hidden"
+        class="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(0_0_0/0.12)] backdrop-blur-md sm:hidden dark:shadow-[0_-8px_24px_rgb(0_0_0/0.45)]"
         aria-label="Key, scale and mode"
     >
-        <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_minmax(0,1fr)] gap-2">
+        <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_minmax(0,1fr)] divide-x">
             <button
                 v-for="item in items"
                 :key="item.sheet"
                 type="button"
-                class="flex min-w-0 flex-col items-start rounded-lg border bg-card px-3 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                class="flex min-w-0 flex-col items-start px-3 py-1.5 text-left outline-none transition-colors active:bg-surface focus-visible:ring-2 focus-visible:ring-ring"
                 @click="sheet = item.sheet"
             >
-                <span class="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                    {{ item.label }}
-                </span>
-                <span class="flex w-full items-center gap-1 text-sm font-semibold">
+                <span class="text-xs text-muted-foreground">{{ item.label }}</span>
+                <span class="flex w-full items-center gap-1 text-[15px] font-semibold">
                     <span class="truncate">{{ item.value }}</span>
-                    <ChevronUp class="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+                    <ChevronUp class="ml-auto size-4 shrink-0 text-muted-foreground" />
                 </span>
             </button>
         </div>
@@ -91,7 +90,7 @@ function close() {
             >
                 <div class="mx-auto mb-3 h-1 w-10 rounded-full bg-border"></div>
                 <div class="mb-3 flex h-7 items-center justify-between gap-3">
-                    <DialogTitle class="section-label">{{ sheet ? titles[sheet] : "" }}</DialogTitle>
+                    <DialogTitle class="font-display text-lg font-semibold tracking-tight">{{ sheet ? titles[sheet] : "" }}</DialogTitle>
                     <Segmented
                         v-if="sheet === 'key'"
                         v-model="accidentalPreference"
@@ -100,8 +99,8 @@ function close() {
                     />
                 </div>
                 <KeyPicker v-if="sheet === 'key'" v-model="note" :notes-options="notesOptions" @select="close" />
-                <ScalePicker v-else-if="sheet === 'scale'" v-model="scale" :scales-options="scalesOptions" @select="close" />
-                <ModePicker v-else-if="sheet === 'mode'" v-model="mode" :mode-options="modeOptions" @select="close" />
+                <ScaleButtons v-else-if="sheet === 'scale'" v-model="scale" :scales-options="scalesOptions" @select="close" />
+                <ModeButtons v-else-if="sheet === 'mode'" v-model="mode" :mode-options="modeOptions" @select="close" />
             </DialogContent>
         </DialogPortal>
     </DialogRoot>

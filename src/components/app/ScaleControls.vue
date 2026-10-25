@@ -18,10 +18,10 @@ const accidentalPreference = defineModel<string>("accidentalPreference", { requi
 </script>
 
 <template>
-    <div class="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
         <section>
             <div class="mb-3 flex h-7 items-center justify-between gap-3">
-                <h2 class="section-label">Key</h2>
+                <h2 class="font-display text-lg font-semibold tracking-tight">Key</h2>
                 <Segmented
                     v-model="accidentalPreference"
                     :options="accidentalPreferenceOptions"
@@ -32,12 +32,12 @@ const accidentalPreference = defineModel<string>("accidentalPreference", { requi
         </section>
 
         <section>
-            <h2 class="section-label mb-3 flex h-7 items-center">Scale</h2>
+            <h2 class="mb-3 flex h-7 items-center font-display text-lg font-semibold tracking-tight">Scale</h2>
             <ScalePicker v-model="scale" :scales-options="scalesOptions" />
         </section>
 
         <section>
-            <h2 class="section-label mb-3 flex h-7 items-center">Mode</h2>
+            <h2 class="mb-3 flex h-7 items-center font-display text-lg font-semibold tracking-tight">Mode</h2>
             <ModePicker v-model="mode" :mode-options="modeOptions" />
         </section>
     </div>
