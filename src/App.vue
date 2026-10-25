@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Fretboard } from "@/components/ui/fretboard";
 import DialogTuningEditor from "@/components/tuning-editor/Dialog.TuningEditor.vue";
-import AppFooter from "@/components/app/AppFooter.vue";
 import AppHeader from "@/components/app/AppHeader.vue";
+import { HarmenDevLogo } from "@/components/ui/harmen-dev-logo";
 import { Logo } from "@/components/ui/logo";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import ChordPanel from "@/components/app/ChordPanel.vue";
 import PickerBar from "@/components/app/PickerBar.vue";
 import ScaleControls from "@/components/app/ScaleControls.vue";
@@ -90,11 +91,30 @@ const {
 </script>
 
 <template>
-    <div class="mx-auto flex w-full max-w-[1300px] flex-col gap-6 px-4 pt-8 pb-28 sm:pb-8 lg:px-10 lg:py-12">
-        <a href="/" class="flex w-fit items-center gap-2 text-primary">
-            <Logo class="h-7 w-auto" />
-            <span class="font-display text-xl font-bold tracking-tight">Guitar Scales</span>
-        </a>
+    <div class="mx-auto flex w-full max-w-[1300px] flex-col gap-6 px-4 pt-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-8 lg:px-10 lg:py-12">
+        <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2.5">
+                <a href="/" aria-label="Guitar Scales home">
+                    <Logo class="h-9 w-auto" />
+                </a>
+                <div class="flex flex-col">
+                    <a href="/" class="font-display text-xl leading-tight font-bold tracking-tight text-primary">
+                        Guitar Scales
+                    </a>
+                    <a
+                        class="group inline-flex w-fit items-center gap-1 text-[11px] leading-tight text-muted-foreground hover:text-foreground"
+                        target="_blank"
+                        href="https://harmen.dev"
+                    >
+                        by
+                        <HarmenDevLogo class="h-2.5 w-auto text-primary" />
+                        <span class="font-medium group-hover:underline underline-offset-2">harmen.dev</span>
+                    </a>
+                </div>
+            </div>
+
+            <ThemeToggle />
+        </div>
 
         <AppHeader
             :heading="heading"
@@ -163,6 +183,20 @@ const {
             @toggle="toggleChord"
         />
 
+        <!-- Phones: tuning sits under the chords so the scale and neck stay on top -->
+        <section class="sm:hidden">
+            <h2 class="mb-3 font-display text-lg font-semibold tracking-tight">Tuning</h2>
+            <TuningControls
+                field
+                v-model:selected-tuning-id="selectedTuningId"
+                :can-edit-selected-tuning="canEditSelectedTuning"
+                :tuning="tuning"
+                :tuning-options="tuningOptions"
+                @create="openCreateCustomTuning"
+                @edit="openEditCustomTuning"
+            />
+        </section>
+
         <!-- On phones these live in the sticky bottom bar instead -->
         <div class="hidden flex-col gap-6 sm:flex">
             <hr class="my-2" />
@@ -190,7 +224,6 @@ const {
             :scales-options="scalesOptions"
         />
 
-
         <DialogTuningEditor
             v-if="isEditingCustomTuning"
             :model-value="draftTuning"
@@ -200,7 +233,5 @@ const {
             @cancel="closeCustomTuningEditor"
             @delete="onDeleteCustomTuning"
         />
-
-        <AppFooter class="mt-6" />
     </div>
 </template>

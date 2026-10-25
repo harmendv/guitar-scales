@@ -109,7 +109,8 @@ const kindClasses: Record<NoteKind, string> = {
     chord: "bg-tone-chord text-[#10213d] shadow-[0_0_0_4px_rgb(147_187_247/0.22)]",
     scale: "bg-tone-scale text-[#2a2420]",
     muted: "bg-[#ece6d6]/35 text-white/70",
-    other: "bg-white/[0.07] text-white/30 font-medium",
+    // Opaque so the string doesn't run through the label
+    other: "bg-[var(--wood-open)] text-white/60 font-medium ring-1 ring-inset ring-white/10",
 };
 </script>
 

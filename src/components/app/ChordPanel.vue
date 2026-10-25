@@ -19,7 +19,7 @@ const edgeFade = useEdgeFade(row);
 <template>
     <section>
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 class="section-label">Diatonic chords</h2>
+            <h2 class="font-display text-lg font-semibold tracking-tight">Diatonic chords</h2>
             <p class="text-xs text-muted-foreground">
                 Select a chord to highlight its tones on the neck
             </p>
@@ -28,10 +28,10 @@ const edgeFade = useEdgeFade(row);
         <div
             ref="row"
             :style="edgeFade"
-            class="edge-fade no-scrollbar -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-2 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 sm:[mask-image:none] lg:grid-cols-7"
+            class="edge-fade no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 sm:[mask-image:none] lg:grid-cols-7"
         >
             <ChordButton
-                class="w-[8.5rem] shrink-0 snap-start sm:w-auto"
+                class="w-[8.5rem] shrink-0 sm:w-auto"
                 v-for="(chord, index) in chords"
                 :key="`${chord.note}-${chord.chord}-${index}`"
                 :active="activeChord === index + 1"
