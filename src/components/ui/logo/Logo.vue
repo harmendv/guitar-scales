@@ -1,6 +1,8 @@
 <template>
+    <!-- Not locked to the drawing's tall 36.6:50 ratio, so the size classes can square it up a bit -->
     <svg
         viewBox="151 0 36.6 50"
+        preserveAspectRatio="none"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"

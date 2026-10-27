@@ -1,7 +1,7 @@
 type Option = { label: string; value: string };
 
 const families: { label: string; slugs: string[] }[] = [
-    { label: "Diatonic", slugs: ["major", "natural-minor"] },
+    { label: "Major & minor", slugs: ["major", "natural-minor"] },
     { label: "Pentatonic", slugs: ["major-pentatonic", "minor-pentatonic"] },
     { label: "Harmonic & melodic", slugs: ["melodic-minor", "harmonic-minor", "harmonic-major"] },
     { label: "Symmetric", slugs: ["diminished", "augmented", "whole-tone"] },

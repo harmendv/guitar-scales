@@ -1,73 +1,46 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { Play } from "lucide-vue-next";
-import { formatNoteLabel, type ScaleNote } from "@/composables/useNotes";
+import { Ripple } from "@/components/ui/ripple";
 
 defineProps<{
     heading: string;
     subheading: string;
-    scaleNotes: ScaleNote[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
     play: [];
 }>();
+
+const ripples = ref(0);
+
+function play() {
+    ripples.value++;
+    emit("play");
+}
 </script>
 
 <template>
-    <header class="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-        <div class="flex w-full min-w-0 flex-col gap-4 sm:w-auto">
-            <div class="flex items-end justify-between gap-4">
-                <div>
-                    <p class="text-sm text-muted-foreground">{{ subheading }}</p>
-                    <h1 class="font-display text-3xl leading-tight font-bold tracking-tight lg:text-4xl">
-                        {{ heading }}
-                    </h1>
-                </div>
-                <!-- Phones: tuning moves under the neck, so Play sits next to the title -->
-                <button
-                    type="button"
-                    aria-label="Play scale"
-                    class="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring outline-none sm:hidden"
-                    @click="$emit('play')"
-                >
-                    <Play class="size-4 fill-current" />
-                </button>
-            </div>
-
-            <ol class="flex w-full overflow-hidden rounded-xl border bg-card sm:w-fit">
-                <li
-                    v-for="(scaleNote, index) in scaleNotes"
-                    :key="`${scaleNote.note}-${index}`"
-                    :class="[
-                        'flex min-w-0 flex-1 flex-col items-center gap-0.5 border-l px-1 py-2 first:border-l-0 sm:w-14 sm:flex-none',
-                        index === 0 ? 'border-tone-root bg-tone-root text-white' : '',
-                    ]"
-                >
-                    <span class="font-display text-base leading-none font-semibold">
-                        {{ formatNoteLabel(scaleNote.note) }}
-                    </span>
-                    <span
-                        :class="[
-                            'tabular-nums text-[10px]',
-                            index === 0 ? 'text-white/80' : 'text-muted-foreground',
-                        ]"
-                    >
-                        {{ scaleNote.degree }}
-                    </span>
-                </li>
-            </ol>
-        </div>
-
-        <div class="hidden items-center gap-3 sm:flex">
-            <slot />
+    <!-- The play button is as tall as one subheading line plus one heading line (text-sm, then
+         text-3xl/4xl at leading-tight), so it lines up with them; long titles wrap below it -->
+    <header class="flex items-start gap-4">
+        <div class="relative flex shrink-0">
+            <Ripple :count="ripples" :scale="1.8" class="inset-0 rounded-2xl bg-primary" />
             <button
                 type="button"
-                class="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring outline-none"
-                @click="$emit('play')"
+                aria-label="Play scale"
+                title="Play scale"
+                class="relative inline-flex size-[calc(1.25rem+1.875rem*1.25)] items-center justify-center rounded-2xl bg-primary text-primary-foreground transition hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring outline-none lg:size-[calc(1.25rem+2.25rem*1.25)]"
+                @click="play"
             >
-                <Play class="size-3.5 fill-current" />
-                Play scale
+                <Play class="ml-0.5 size-5 fill-current lg:size-6" />
             </button>
+        </div>
+        <div class="min-w-0">
+            <p class="text-sm text-muted-foreground">{{ subheading }}</p>
+            <h1 class="font-display text-3xl leading-tight font-bold tracking-tight lg:text-4xl">
+                {{ heading }}
+            </h1>
         </div>
     </header>
 </template>

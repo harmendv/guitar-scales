@@ -91,11 +91,11 @@ const {
 </script>
 
 <template>
-    <div class="mx-auto flex w-full max-w-[1300px] flex-col gap-6 px-4 pt-8 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-8 lg:px-10 lg:py-12">
+    <div class="mx-auto flex w-full max-w-[1300px] flex-col gap-6 px-4 py-8 lg:px-10 lg:py-12">
         <div class="flex items-center justify-between gap-4">
             <div class="flex items-center gap-2.5">
                 <a href="/" aria-label="Guitar Scales home">
-                    <Logo class="h-9 w-auto" />
+                    <Logo class="h-9 w-[1.8rem]" />
                 </a>
                 <div class="flex flex-col">
                     <a href="/" class="font-display text-xl leading-tight font-bold tracking-tight text-primary">
@@ -119,18 +119,39 @@ const {
         <AppHeader
             :heading="heading"
             :subheading="subheading"
-            :scale-notes="scaleNotes"
             @play="playScale"
-        >
-            <TuningControls
-                v-model:selected-tuning-id="selectedTuningId"
-                :can-edit-selected-tuning="canEditSelectedTuning"
-                :tuning="tuning"
-                :tuning-options="tuningOptions"
-                @create="openCreateCustomTuning"
-                @edit="openEditCustomTuning"
+        />
+
+        <PickerBar
+            v-model:note="note"
+            v-model:scale="scale"
+            v-model:mode="mode"
+            v-model:accidental-preference="accidentalPreference"
+            :accidental-preference-options="accidentalPreferenceOptions"
+            :mode-options="modeOptions"
+            :notes-options="notesOptions"
+            :scales-options="scalesOptions"
+        />
+
+        <!-- On phones these open as sheets from the bar above instead -->
+        <div class="hidden sm:block">
+            <ScaleControls
+                v-model:note="note"
+                v-model:scale="scale"
+                v-model:mode="mode"
+                v-model:accidental-preference="accidentalPreference"
+                :accidental-preference-options="accidentalPreferenceOptions"
+                :mode-options="modeOptions"
+                :notes-options="notesOptions"
+                :scales-options="scalesOptions"
             />
-        </AppHeader>
+        </div>
+
+        <ChordPanel
+            :active-chord="activeChord"
+            :chords="chords"
+            @toggle="toggleChord"
+        />
 
         <ViewModeControls
             v-model:note-names="noteNames"
@@ -159,31 +180,37 @@ const {
                 :chord-root-pitch-class="chordRootPitchClass"
                 :chord-notes="activeFretboardChordNotes"
                 :show-degrees="noteNames === 'degrees'"
-                :show-labels="noteNames !== 'dots'"
                 :root-pitch-class="rootPitchClass"
                 :show-rest="noteVisibility === 'all'"
             />
-            <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-                <span class="flex items-center gap-1.5">
-                    <span class="size-2.5 rounded-full bg-tone-root"></span>Root
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <span class="size-2.5 rounded-full border border-foreground/15 bg-tone-scale"></span>Scale tone
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <span class="size-2.5 rounded-full bg-tone-chord"></span>Chord tone
-                </span>
-                <span>Tap a note to hear it</span>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
+                    <span class="flex items-center gap-1.5">
+                        <span class="size-2.5 rounded-full bg-tone-root"></span>Root
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="size-2.5 rounded-full border border-foreground/15 bg-tone-scale"></span>Scale tone
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="size-2.5 rounded-full bg-tone-chord"></span>Chord tone
+                    </span>
+                    <span>Tap a note to hear it</span>
+                </div>
+                <!-- Phones get the bordered version in its own section below -->
+                <div class="hidden sm:block">
+                    <TuningControls
+                        v-model:selected-tuning-id="selectedTuningId"
+                        :can-edit-selected-tuning="canEditSelectedTuning"
+                        :tuning="tuning"
+                        :tuning-options="tuningOptions"
+                        @create="openCreateCustomTuning"
+                        @edit="openEditCustomTuning"
+                    />
+                </div>
             </div>
         </div>
 
-        <ChordPanel
-            :active-chord="activeChord"
-            :chords="chords"
-            @toggle="toggleChord"
-        />
-
-        <!-- Phones: tuning sits under the chords so the scale and neck stay on top -->
+        <!-- Phones: tuning sits under the neck so the chords and neck stay on top -->
         <section class="sm:hidden">
             <h2 class="mb-3 font-display text-lg font-semibold tracking-tight">Tuning</h2>
             <TuningControls
@@ -196,33 +223,6 @@ const {
                 @edit="openEditCustomTuning"
             />
         </section>
-
-        <!-- On phones these live in the sticky bottom bar instead -->
-        <div class="hidden flex-col gap-6 sm:flex">
-            <hr class="my-2" />
-
-            <ScaleControls
-                v-model:note="note"
-                v-model:scale="scale"
-                v-model:mode="mode"
-                v-model:accidental-preference="accidentalPreference"
-                :accidental-preference-options="accidentalPreferenceOptions"
-                :mode-options="modeOptions"
-                :notes-options="notesOptions"
-                :scales-options="scalesOptions"
-            />
-        </div>
-
-        <PickerBar
-            v-model:note="note"
-            v-model:scale="scale"
-            v-model:mode="mode"
-            v-model:accidental-preference="accidentalPreference"
-            :accidental-preference-options="accidentalPreferenceOptions"
-            :mode-options="modeOptions"
-            :notes-options="notesOptions"
-            :scales-options="scalesOptions"
-        />
 
         <DialogTuningEditor
             v-if="isEditingCustomTuning"

@@ -42,7 +42,6 @@ export function useFretboardState(input: {
     const noteNamesOptions = [
         { label: "Notes", value: "notes" },
         { label: "Intervals", value: "degrees" },
-        { label: "Dots", value: "dots" },
     ];
     const noteVisibilityOptions = [
         { label: "Scale only", value: "only-scale" },
@@ -63,16 +62,23 @@ export function useFretboardState(input: {
         const rootPitchClassValue = getPitchClass(input.note.value);
         return rootPitchClassValue == null ? null : (rootPitchClassValue - modeOffset.value + 12) % 12;
     });
-    const resolvedAccidentalPreference = computed<ResolvedAccidentalPreference>(() => {
-        if (input.accidentalPreference.value !== "auto") return input.accidentalPreference.value;
+    const keySignaturePreference = computed<ResolvedAccidentalPreference>(() =>
+        parentPitchClass.value != null && FLAT_KEY_PITCH_CLASSES.includes(parentPitchClass.value)
+            ? "flat"
+            : "sharp"
+    );
+    const autoAccidentalPreference = computed<ResolvedAccidentalPreference>(() => {
         // Keep a spelling the user picked (D♭, F♯); otherwise follow the parent key signature.
         if (/[b♭♯#]/.test(input.note.value)) {
             return resolveAccidentalPreference(input.note.value, "auto");
         }
-        return parentPitchClass.value != null && FLAT_KEY_PITCH_CLASSES.includes(parentPitchClass.value)
-            ? "flat"
-            : "sharp";
+        return keySignaturePreference.value;
     });
+    const resolvedAccidentalPreference = computed<ResolvedAccidentalPreference>(() =>
+        input.accidentalPreference.value !== "auto"
+            ? input.accidentalPreference.value
+            : autoAccidentalPreference.value
+    );
     const parentNote = computed(() =>
         parentPitchClass.value == null
             ? input.note.value
@@ -98,14 +104,13 @@ export function useFretboardState(input: {
             value: entry.id,
         }));
     });
-    const scaleNotes = computed(() => {
-        const notes = getScaleNotes(
-            selectedScaleIndex.value,
-            input.mode.value,
-            parentNote.value,
-            resolvedAccidentalPreference.value
-        );
-        if (input.accidentalPreference.value !== "auto") return notes;
+    function spellScaleNotes(preference: ResolvedAccidentalPreference, auto: boolean): ScaleNote[] {
+        const parent =
+            parentPitchClass.value == null
+                ? input.note.value
+                : formatPitchClass(parentPitchClass.value, preference);
+        const notes = getScaleNotes(selectedScaleIndex.value, input.mode.value, parent, preference);
+        if (!auto) return notes;
         // Seven-note scales get one note per letter (C D E♭ F♯ G A♭ B), with degrees to match.
         if (notes.length === 7) return spellByLetter(notes);
         // Otherwise, from a natural key, spell altered degrees by their degree: ♭5 as E♭ rather than D♯.
@@ -118,7 +123,20 @@ export function useFretboardState(input: {
                 note: formatPitchClass(scaleNote.pitchClass, accidental === "♭" ? "flat" : "sharp"),
             };
         });
-    });
+    }
+    const scaleNotes = computed(() =>
+        spellScaleNotes(resolvedAccidentalPreference.value, input.accidentalPreference.value === "auto")
+    );
+    // Chords keep the key's own spelling, so forcing ♯ doesn't turn E♭maj7♯5 into D♯maj7♯5 under ♭III.
+    // A forced ♯/♭ also respells the key note itself (E♭ → D♯), so go by the key signature then.
+    const chordScaleNotes = computed(() =>
+        spellScaleNotes(
+            input.accidentalPreference.value === "auto"
+                ? autoAccidentalPreference.value
+                : keySignaturePreference.value,
+            true
+        )
+    );
     const modeFormula = computed(() => {
         const scale = scales[selectedScaleIndex.value];
         if (!scale) return [];
@@ -129,7 +147,7 @@ export function useFretboardState(input: {
     });
     const chords = computed<DisplayChord[]>(() => {
         // Stack every other scale note and name the chord from the notes it actually contains.
-        const notes = scaleNotes.value;
+        const notes = chordScaleNotes.value;
         const count = notes.length;
         return modeFormula.value.map((entry, index) => {
             const degree = notes[index]?.degree ?? entry.degree;
@@ -405,13 +423,15 @@ const FOUR_NOTE_CHORDS = chordDefinitions
         key: chord.intervals.map((interval) => INTERVAL_SEMITONES[interval] ?? -1).join(","),
     }));
 
-// Seventh chords first, then sixths and add9s, then triads, with sus chords last.
+// Seventh chords first, then sixths and add9s, then triads, with sus chords last; a full
+// chord beats one of the same size without its fifth.
 function containedChordScore(intervals: string[], abbreviation: string): number {
     let score = intervals.length * 10;
     if (intervals.some((interval) => interval.endsWith("7"))) score += 3;
     else if (intervals.includes("6")) score += 2;
     else if (intervals.includes("9")) score += 1;
-    if (abbreviation.startsWith("sus")) score -= 5;
+    if (abbreviation.includes("sus")) score -= 5;
+    if (!intervals.some((interval) => interval.endsWith("5"))) score -= 2;
     return score;
 }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { ChevronUp } from "lucide-vue-next";
+import { ChevronDown } from "lucide-vue-next";
 import {
     DialogContent,
     DialogOverlay,
@@ -57,9 +57,9 @@ function close() {
 </script>
 
 <template>
-    <!-- Phones only: Key, Scale and Mode stay in reach while you look at the neck -->
+    <!-- Phones only: Key, Scale and Mode come first, each opening a sheet -->
     <nav
-        class="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgb(0_0_0/0.12)] backdrop-blur-md sm:hidden dark:shadow-[0_-8px_24px_rgb(0_0_0/0.45)]"
+        class="rounded-xl border bg-card p-1.5 sm:hidden"
         aria-label="Key, scale and mode"
     >
         <div class="grid grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)_minmax(0,1fr)] divide-x">
@@ -73,7 +73,7 @@ function close() {
                 <span class="text-xs text-muted-foreground">{{ item.label }}</span>
                 <span class="flex w-full items-center gap-1 text-[15px] font-semibold">
                     <span class="truncate">{{ item.value }}</span>
-                    <ChevronUp class="ml-auto size-4 shrink-0 text-muted-foreground" />
+                    <ChevronDown class="ml-auto size-4 shrink-0 text-muted-foreground" />
                 </span>
             </button>
         </div>

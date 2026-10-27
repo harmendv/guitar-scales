@@ -38,7 +38,7 @@ export function useAppState() {
     const chord = ref<number | null>(
         params.chord ? Number.parseInt(params.chord as string, 10) : null
     );
-    const noteNames = ref<string>((params.noteNames as string) || "notes");
+    const noteNames = ref<string>(params.noteNames === "degrees" ? "degrees" : "notes");
     const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
     const accidentalPreference = ref<AccidentalPreference>(
         params.accidentals === "sharp" || params.accidentals === "flat"
