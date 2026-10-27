@@ -8,7 +8,7 @@ import {
     type ResolvedAccidentalPreference,
     type ScaleNote,
 } from "@/composables/useNotes";
-import { type ChordNotes } from "@/composables/useChords";
+import { type ChordTones } from "@/composables/useChords";
 import { cn } from "@/lib/utils";
 import { Ripple } from "@/components/ui/ripple";
 
@@ -29,8 +29,7 @@ const props = withDefaults(
         showDegrees?: boolean | string;
         showRest?: boolean | string;
         rootPitchClass?: number | null;
-        chordRootPitchClass?: number | null;
-        chordNotes?: ChordNotes;
+        chordTones?: ChordTones;
         thickness?: number;
     }>(),
     {
@@ -45,8 +44,7 @@ const props = withDefaults(
         showDegrees: false,
         showRest: false,
         rootPitchClass: null,
-        chordRootPitchClass: null,
-        chordNotes: () => ({}),
+        chordTones: () => ({}),
         thickness: 1,
     }
 );
@@ -61,7 +59,7 @@ const highlightByPitchClass = computed(() => {
 
 const notes = computed(() => {
     let octave = props.startOctave;
-    const chordActive = props.chordRootPitchClass != null;
+    const chordActive = Object.keys(props.chordTones).length > 0;
     const positionEndFret = props.positionStartFret + props.positionSpan - 1;
 
     return Array.from({ length: props.frets }, (_, i) => {
@@ -70,13 +68,15 @@ const notes = computed(() => {
         if (note === "C" && i !== 0) octave++;
         const scaleNote =
             pitchClass == null ? undefined : highlightByPitchClass.value.get(pitchClass);
-        const chordNote = pitchClass == null ? undefined : props.chordNotes[String(pitchClass)];
-        const rootPitchClass = chordActive ? props.chordRootPitchClass : props.rootPitchClass;
+        const chordTone = pitchClass == null ? undefined : props.chordTones[String(pitchClass)];
 
+        // With chords selected, their tones take over and the rest of the scale steps back
         let kind: NoteKind = "other";
-        if (pitchClass != null && pitchClass === rootPitchClass) kind = "root";
-        else if (chordActive && chordNote) kind = "chord";
-        else if (scaleNote) kind = chordActive ? "muted" : "scale";
+        if (chordActive) {
+            if (chordTone) kind = "chord";
+            else if (scaleNote) kind = "muted";
+        } else if (pitchClass != null && pitchClass === props.rootPitchClass) kind = "root";
+        else if (scaleNote) kind = "scale";
 
         const inView =
             props.viewMode === "position"
@@ -88,7 +88,7 @@ const notes = computed(() => {
         // Use the scale's own spelling (E♭ in C Dorian), even if the neck defaults to sharps.
         let label: string = formatNoteLabel(scaleNote?.note ?? note);
         if (props.showDegrees) {
-            if (chordActive && chordNote?.interval) label = chordNote.interval;
+            if (chordActive && chordTone?.interval) label = chordTone.interval;
             else if (!chordActive && scaleNote) label = scaleNote.degree;
         }
 
@@ -98,23 +98,41 @@ const notes = computed(() => {
             kind,
             label,
             inView,
+            chordStyle: chordTone ? chordToneStyle(chordTone) : undefined,
+            rippleColor: chordTone?.colors[0],
             visible: Boolean(props.showRest) || (inView && kind !== "other"),
         };
     });
 });
 
+// One chord fills the dot with its colour; a note shared by several is split into equal slices.
+// A chord's root gets a ring in that chord's colour, set off from the dot by a gap of wood.
+function chordToneStyle(tone: ChordTones[string]) {
+    const { colors, rootColor } = tone;
+    const slice = 100 / colors.length;
+    return {
+        background:
+            colors.length === 1
+                ? colors[0]
+                : `conic-gradient(${colors.map((color, index) => `${color} ${index * slice}% ${(index + 1) * slice}%`).join(", ")})`,
+        boxShadow: rootColor ? `0 0 0 2px var(--wood), 0 0 0 4px ${rootColor}` : undefined,
+    };
+}
+
 const kindClasses: Record<NoteKind, string> = {
     root: "bg-tone-root text-white shadow-[0_0_0_4px_rgb(245_48_3/0.3)]",
-    chord: "bg-tone-chord text-[#10213d] shadow-[0_0_0_4px_rgb(147_187_247/0.22)]",
+    // Colour and root ring come from chordToneStyle
+    chord: "text-[#1a1918]",
     scale: "bg-tone-scale text-[#2a2420]",
-    muted: "bg-[#ece6d6]/35 text-white/70",
+    // Opaque mix rather than opacity, so the string doesn't show through; the legend uses the same mix
+    muted: "bg-[color-mix(in_srgb,var(--tone-scale)_35%,var(--wood))] text-white/75",
     // Opaque so the string doesn't run through the label; matches the wood behind it
     other: "bg-[var(--wood)] text-white/60 font-medium",
 };
 
 const rippleClasses: Record<NoteKind, string> = {
     root: "bg-tone-root",
-    chord: "bg-tone-chord",
+    chord: "",
     scale: "bg-tone-scale",
     muted: "bg-tone-scale",
     other: "bg-tone-scale",
@@ -140,7 +158,13 @@ function play(index: number) {
             :key="index"
             class="relative flex items-center justify-center"
         >
-            <Ripple :count="ripples[index] ?? 0" :class="['size-[26px] rounded-full', rippleClasses[note.kind]]" />
+            <!-- 1.35x (35px) stays inside the narrowest 36px fret, so it never spills onto the next note -->
+            <Ripple
+                :count="ripples[index] ?? 0"
+                :scale="1.35"
+                :class="['size-[26px] rounded-full', rippleClasses[note.kind]]"
+                :style="note.rippleColor ? { background: note.rippleColor } : undefined"
+            />
             <button
                 type="button"
                 :tabindex="note.visible ? 0 : -1"
@@ -154,6 +178,7 @@ function play(index: number) {
                         !note.visible ? 'pointer-events-none opacity-0' : '',
                     )
                 "
+                :style="note.chordStyle"
                 @click="play(index)"
             >
                 {{ note.label }}

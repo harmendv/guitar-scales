@@ -7,6 +7,8 @@ import { formatNoteLabel } from "@/composables/useNotes";
 defineProps<{
     active: boolean;
     chord: string;
+    // The chord's colour on the neck; fills the card while it's selected
+    color: string;
     note: string;
     numeral: string;
     tones: string[];
@@ -30,10 +32,9 @@ function play() {
             :aria-pressed="active"
             :class="[
                 'flex size-full flex-col items-start rounded-xl border py-3 pr-10 pl-4 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                active
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-card hover:border-foreground/30',
+                active ? 'text-[#1a1918]' : 'border-border bg-card hover:border-foreground/30',
             ]"
+            :style="active ? { background: color, borderColor: color } : undefined"
             @click="$emit('click')"
         >
             <span class="tabular-nums text-[11px] opacity-70">{{ numeral }}</span>
@@ -45,14 +46,14 @@ function play() {
             </span>
         </button>
         <div class="absolute top-2 right-2 size-7">
-            <Ripple :count="ripples" :scale="2.2" :class="['inset-0 rounded-lg', active ? 'bg-white/40' : 'bg-primary']" />
+            <Ripple :count="ripples" :scale="2.2" :class="['inset-0 rounded-lg', active ? 'bg-black/20' : 'bg-primary']" />
             <button
                 type="button"
                 :aria-label="`Play ${formatNoteLabel(note)}${chord}`"
                 :class="[
                     'relative inline-flex size-full items-center justify-center rounded-lg transition outline-none active:scale-90 focus-visible:ring-2 focus-visible:ring-ring',
                     active
-                        ? 'bg-white/15 text-primary-foreground hover:bg-white/25'
+                        ? 'bg-black/10 text-[#1a1918] hover:bg-black/15'
                         : 'bg-surface text-muted-foreground hover:text-foreground',
                 ]"
                 @click="play"

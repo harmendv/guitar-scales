@@ -63,7 +63,6 @@
     --font-display: "Instrument Sans Variable", "Instrument Sans Fallback", ui-sans-serif, system-ui, sans-serif;
     --color-surface: var(--surface);
     --color-tone-root: var(--tone-root);
-    --color-tone-chord: var(--tone-chord);
     --color-tone-scale: var(--tone-scale);
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
@@ -93,7 +92,17 @@
     --input: #e4e1da;
     --ring: #f53003;
     --tone-root: #f53003;
-    --tone-chord: #93bbf7;
+    /* One colour per chord degree (I, ii, iii, …). The usual groupings get hues far apart:
+       I–IV–V is blue, yellow, green; ii–V–I pink, green, blue; vi adds violet. All light enough
+       to read dark text on, and clear of the root's red */
+    --chord-1: #6cc4ff;
+    --chord-2: #f48fc0;
+    --chord-3: #5fd6c2;
+    --chord-4: #f7c948;
+    --chord-5: #7bd88f;
+    --chord-6: #b99cff;
+    --chord-7: #e8b48a;
+    --chord-8: #c9c3b8;
     --tone-scale: #ece6d6;
     --radius: 0.625rem;
 
