@@ -11,6 +11,15 @@ export interface Chord {
 
 export type ChordNotes = Record<string, ScaleNote & { interval?: string }>;
 
+// Fretboard view of the selected chords, keyed by pitch class: one colour per chord the note is
+// in, the colour of the chord it's the root of (if any), and the interval to label it with.
+export type ChordTones = Record<string, { colors: string[]; rootColor?: string; interval?: string }>;
+
+// Each degree keeps its own colour, so adding or removing a chord never recolours the others.
+export function chordColor(index: number): string {
+    return `var(--chord-${(index % 8) + 1})`;
+}
+
 export interface ArpeggioOptions {
     toneCount: 3 | 4;
 }

@@ -3,6 +3,7 @@ import { useUrlSearchParams } from "@vueuse/core";
 import { useCustomTunings } from "@/composables/useCustomTunings";
 import { getModeRootNote, type AccidentalPreference } from "@/composables/useNotes";
 import { scalesFlatMap } from "@/composables/useScales";
+import type { ChordSize } from "@/composables/useFretboardState";
 import {
     builtInTunings,
     deserializeTuning,
@@ -35,11 +36,16 @@ export function useAppState() {
                   ) || (params.note as string)
                 : "C")
     );
-    const chord = ref<number | null>(
-        params.chord ? Number.parseInt(params.chord as string, 10) : null
+    // Selected chords as 1-based degrees, e.g. `chord=1,4,5`; a single `chord=2` from older links still parses.
+    const chords = ref<number[]>(
+        String(params.chord ?? "")
+            .split(",")
+            .map((value) => Number.parseInt(value, 10))
+            .filter((value) => Number.isInteger(value) && value > 0)
     );
+    const chordSize = ref<ChordSize>(params.chordSize === "sevenths" ? "sevenths" : "triads");
     const noteNames = ref<string>(params.noteNames === "degrees" ? "degrees" : "notes");
-    const noteVisibility = ref<string>((params.noteVisibility as string) || "all");
+    const noteVisibility = ref<string>((params.noteVisibility as string) || "only-scale");
     const accidentalPreference = ref<AccidentalPreference>(
         params.accidentals === "sharp" || params.accidentals === "flat"
             ? params.accidentals
@@ -124,11 +130,11 @@ export function useAppState() {
     );
     watch(scale, (value) => {
         mode.value = 1;
-        chord.value = null;
+        chords.value = [];
         params.scale = value;
     });
     watch(mode, (value) => {
-        chord.value = null;
+        chords.value = [];
         params.mode = value as never;
     });
     watch(noteNames, (value) => {
@@ -144,8 +150,13 @@ export function useAppState() {
         params.viewMode = value;
         params.show3nps = value === "3nps" ? "1" : "0";
     });
-    watch(chord, (value) => {
-        params.chord = value as never;
+    watch(chordSize, (value) => {
+        if (value === "sevenths") params.chordSize = value;
+        else delete params.chordSize;
+    });
+    watch(chords, (value) => {
+        if (value.length) params.chord = value.join(",");
+        else delete params.chord;
     });
     watch(
         tuning,
@@ -241,7 +252,8 @@ export function useAppState() {
     }
 
     return {
-        chord,
+        selectedChords: chords,
+        chordSize,
         canEditSelectedTuning,
         accidentalPreference,
         closeCustomTuningEditor,

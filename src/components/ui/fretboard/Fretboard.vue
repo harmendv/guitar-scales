@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch, nextTick } from "vue";
 import { type ResolvedAccidentalPreference, type ScaleNote } from "@/composables/useNotes"
-import { type ChordNotes } from "@/composables/useChords";
+import { type ChordTones } from "@/composables/useChords";
 import FretboardString from "./FretboardString.vue";
 
 interface GuitarString {
@@ -23,8 +23,7 @@ const props = withDefaults(
         showDegrees: boolean | string;
         showRest: boolean | string;
         rootPitchClass: number | null;
-        chordRootPitchClass: number | null;
-        chordNotes: ChordNotes;
+        chordTones: ChordTones;
     }>(),
     {
         strings: () => [
@@ -46,8 +45,7 @@ const props = withDefaults(
         showDegrees: false,
         showRest: false,
         rootPitchClass: null,
-        chordRootPitchClass: null,
-        chordNotes: () => ({}),
+        chordTones: () => ({}),
     }
 );
 
@@ -148,8 +146,7 @@ watch(
                         :position-start-fret="positionStartFret"
                         :position-span="positionSpan"
                         :note-preference="notePreference"
-                        :chord-root-pitch-class="chordRootPitchClass"
-                        :chord-notes="chordNotes"
+                        :chord-tones="chordTones"
                         :root-pitch-class="rootPitchClass"
                         :show-degrees="showDegrees"
                         :show-rest="showRest"

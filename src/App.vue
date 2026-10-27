@@ -40,16 +40,16 @@ const {
     tuningEditorMode,
     tuningOptions,
     viewMode,
-    chord,
+    selectedChords,
+    chordSize,
 } = useAppState();
 
 const {
-    activeChord,
-    activeFretboardChordNotes,
     accidentalPreferenceOptions,
     activePosition,
     activeThreeNpsShape,
-    chordRootPitchClass,
+    chordLegend,
+    chordTones,
     chords,
     fretCount,
     heading,
@@ -74,12 +74,13 @@ const {
     toggleChord,
 } = useFretboardState({
     accidentalPreference,
-    chord,
+    chordSize,
     mode,
     note,
     positionSpan,
     positionStartFret,
     scale,
+    selectedChords,
     syncPositionSpan,
     syncPositionStart,
     syncShapeIndex,
@@ -148,7 +149,8 @@ const {
         </div>
 
         <ChordPanel
-            :active-chord="activeChord"
+            v-model:chord-size="chordSize"
+            :selected-chords="selectedChords"
             :chords="chords"
             @toggle="toggleChord"
         />
@@ -177,23 +179,37 @@ const {
                 :position-start-fret="safePositionStartFret"
                 :position-span="safePositionSpan"
                 :note-preference="resolvedAccidentalPreference"
-                :chord-root-pitch-class="chordRootPitchClass"
-                :chord-notes="activeFretboardChordNotes"
+                :chord-tones="chordTones"
                 :show-degrees="noteNames === 'degrees'"
                 :root-pitch-class="rootPitchClass"
                 :show-rest="noteVisibility === 'all'"
             />
             <div class="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                 <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-                    <span class="flex items-center gap-1.5">
-                        <span class="size-2.5 rounded-full bg-tone-root"></span>Root
-                    </span>
-                    <span class="flex items-center gap-1.5">
-                        <span class="size-2.5 rounded-full border border-foreground/15 bg-tone-scale"></span>Scale tone
-                    </span>
-                    <span class="flex items-center gap-1.5">
-                        <span class="size-2.5 rounded-full bg-tone-chord"></span>Chord tone
-                    </span>
+                    <!-- With chords selected the legend names each one in its colour -->
+                    <template v-if="chordLegend.length">
+                        <span
+                            v-for="item in chordLegend"
+                            :key="item.label"
+                            class="flex items-center gap-1.5 font-medium text-foreground"
+                        >
+                            <span class="size-2.5 rounded-full" :style="{ background: item.color }"></span>{{ item.label }}
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="size-2.5 rounded-full ring-[1.5px] ring-foreground/60 ring-offset-[1.5px] ring-offset-background"></span>Chord root
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="size-2.5 rounded-full bg-[color-mix(in_srgb,var(--tone-scale)_35%,var(--wood))]"></span>Other scale tone
+                        </span>
+                    </template>
+                    <template v-else>
+                        <span class="flex items-center gap-1.5">
+                            <span class="size-2.5 rounded-full bg-tone-root"></span>Root
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <span class="size-2.5 rounded-full border border-foreground/15 bg-tone-scale"></span>Scale tone
+                        </span>
+                    </template>
                     <span>Tap a note to hear it</span>
                 </div>
                 <!-- Phones get the bordered version in its own section below -->

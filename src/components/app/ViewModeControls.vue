@@ -68,15 +68,17 @@ const styleOptions = computed<{ label: string; value: PositionStyle }[]>(() => [
                     side="bottom"
                     align="start"
                     :side-offset="6"
-                    class="z-50 flex flex-col gap-3 rounded-xl border bg-popover p-3 text-popover-foreground shadow-lg"
+                    class="z-50 flex w-64 flex-col gap-3 rounded-xl border bg-popover p-3 text-popover-foreground shadow-lg"
+                    @open-auto-focus.prevent
                 >
+                    <!-- Both switches stretch to the popover width, options sharing it equally -->
                     <div class="flex flex-col gap-1.5">
-                        <span class="section-label">Labels</span>
-                        <Segmented v-model="noteNames" :options="noteNamesOptions" />
+                        <span class="text-xs text-muted-foreground">Labels</span>
+                        <Segmented v-model="noteNames" :options="noteNamesOptions" class="flex w-full [&_button]:flex-1" />
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <span class="section-label">Show</span>
-                        <Segmented v-model="noteVisibility" :options="noteVisibilityOptions" />
+                        <span class="text-xs text-muted-foreground">Show</span>
+                        <Segmented v-model="noteVisibility" :options="noteVisibilityOptions" class="flex w-full [&_button]:flex-1" />
                     </div>
                 </PopoverContent>
             </PopoverPortal>

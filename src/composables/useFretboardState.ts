@@ -11,20 +11,24 @@ import {
     type ScaleNote,
 } from "@/composables/useNotes";
 import {
-    type ChordNotes,
+    type ChordTones,
+    chordColor,
     chords as chordDefinitions,
     chordsByPrimaryAbbreviation,
 } from "@/composables/useChords";
 import { use3nps } from "@/composables/use3nps";
-import { playTone } from "@/composables/useAudio";
+import { playSequence } from "@/composables/useAudio";
 import { usePositionView } from "@/composables/usePositionView";
 import type { FretboardViewMode } from "@/composables/useAppState";
 import type { Tuning } from "@/composables/useTunings";
 
 export type PositionStyle = "box" | "3nps";
+// Triads stack three scale notes (1-3-5), sevenths four (1-3-5-7)
+export type ChordSize = "triads" | "sevenths";
 
 export function useFretboardState(input: {
-    chord: Ref<number | null>;
+    selectedChords: Ref<number[]>;
+    chordSize: Ref<ChordSize>;
     accidentalPreference: Ref<AccidentalPreference>;
     note: Ref<string>;
     mode: Ref<number>;
@@ -149,11 +153,12 @@ export function useFretboardState(input: {
         // Stack every other scale note and name the chord from the notes it actually contains.
         const notes = chordScaleNotes.value;
         const count = notes.length;
+        const toneCount = input.chordSize.value === "triads" ? 3 : 4;
         return modeFormula.value.map((entry, index) => {
             const degree = notes[index]?.degree ?? entry.degree;
             // Stacking every other note of a five-note scale gives quartal shapes, so use the
             // fullest standard chord on this degree whose notes are all in the scale instead.
-            const contained = count < 6 ? findContainedChord(notes, index) : null;
+            const contained = count < 6 ? findContainedChord(notes, index, toneCount) : null;
             if (contained) {
                 return {
                     note: notes[index].note,
@@ -164,6 +169,7 @@ export function useFretboardState(input: {
                 };
             }
             const stacked = [index, index + 2, index + 4, count === 6 ? index + 5 : index + 6]
+                .slice(0, toneCount)
                 .map((noteIndex) => notes[noteIndex % count])
                 .filter(Boolean);
             const rootPitchClassValue = stacked[0]?.pitchClass ?? 0;
@@ -186,21 +192,38 @@ export function useFretboardState(input: {
             };
         });
     });
-    const activeChord = computed<number | undefined>(() =>
-        input.chord.value == null ? undefined : input.chord.value
-    );
-    const selectedChord = computed(() =>
-        input.chord.value ? chords.value[input.chord.value - 1] : undefined
+    // Selected chords in degree order, each with its colour
+    const selectedChordList = computed(() =>
+        [...input.selectedChords.value]
+            .sort((left, right) => left - right)
+            .map((degree) => ({ degree, chord: chords.value[degree - 1], color: chordColor(degree - 1) }))
+            .filter((entry) => entry.chord != null)
     );
     const modeRootNote = computed(() => scaleNotes.value[0]?.note ?? input.note.value);
     const rootPitchClass = computed(() => scaleNotes.value[0]?.pitchClass ?? null);
-    const chordRootPitchClass = computed(() =>
-        selectedChord.value ? getPitchClass(selectedChord.value.note) : null
-    );
-    const chordNotes = computed<ChordNotes>(() =>
-        Object.fromEntries(
-            (selectedChord.value?.tones ?? []).map((tone) => [String(tone.pitchClass), tone])
-        )
+    const chordTones = computed<ChordTones>(() => {
+        const tones: ChordTones = {};
+        for (const { chord, color } of selectedChordList.value) {
+            const chordRoot = getPitchClass(chord.note);
+            for (const tone of chord.tones) {
+                const entry = (tones[String(tone.pitchClass)] ??= { colors: [] });
+                entry.colors.push(color);
+                // A note that's some chord's root is labelled as that root (1)
+                if (tone.pitchClass === chordRoot) {
+                    entry.rootColor ??= color;
+                    entry.interval = tone.interval;
+                } else if (!entry.rootColor) {
+                    entry.interval ??= tone.interval;
+                }
+            }
+        }
+        return tones;
+    });
+    const chordLegend = computed(() =>
+        selectedChordList.value.map(({ chord, color }) => ({
+            label: `${formatNoteLabel(chord.note)}${chord.chord}`,
+            color,
+        }))
     );
     // Numbered positions follow the scale degrees on the lowest string, climbing up from the root.
     const positionSpanFrets = 5;
@@ -305,7 +328,11 @@ export function useFretboardState(input: {
     );
 
     function toggleChord(index: number) {
-        input.chord.value = input.chord.value === index + 1 ? null : index + 1;
+        const degree = index + 1;
+        const selected = input.selectedChords.value;
+        input.selectedChords.value = selected.includes(degree)
+            ? selected.filter((value) => value !== degree)
+            : [...selected, degree];
     }
 
     function selectPosition(index: number | null) {
@@ -322,9 +349,7 @@ export function useFretboardState(input: {
         if (activePosition.value != null) selectPosition(activePosition.value);
     }
 
-    let playTimers: ReturnType<typeof setTimeout>[] = [];
     function playScale() {
-        playTimers.forEach(clearTimeout);
         const rootPitchClassValue = rootPitchClass.value;
         if (rootPitchClassValue == null) return;
         // Start from the root in octave 3 (MIDI 48 = C3).
@@ -335,20 +360,15 @@ export function useFretboardState(input: {
                 : (scaleNote.pitchClass - rootPitchClassValue + 12) % 12;
             return { note: scaleNote.note, octave: Math.floor((rootMidi + offset) / 12) - 1 };
         });
-        playTimers = sequence.map((step, index) =>
-            setTimeout(() => playTone(step.note, step.octave), index * 280)
-        );
+        playSequence(sequence, 0.18);
     }
 
     return {
-        activeChord,
-        activeFretboardChordNotes: computed(() =>
-            input.chord.value == null ? {} : chordNotes.value
-        ),
+        chordLegend,
+        chordTones,
         accidentalPreferenceOptions,
         activePosition,
         activeThreeNpsShape,
-        chordRootPitchClass,
         chords,
         fretCount,
         heading,
@@ -415,8 +435,8 @@ function spellByLetter(notes: ScaleNote[]): ScaleNote[] {
 }
 
 const SEMITONE_INTERVALS = ["1", "♭2", "2", "♭3", "3", "4", "♭5", "5", "♯5", "6", "♭7", "7"];
-const FOUR_NOTE_CHORDS = chordDefinitions
-    .filter((chord) => chord.intervals.length === 4)
+const NAMED_CHORDS = chordDefinitions
+    .filter((chord) => chord.intervals.length <= 4)
     .map((chord) => ({
         abbreviations: chord.abbreviations,
         intervals: chord.intervals,
@@ -435,13 +455,13 @@ function containedChordScore(intervals: string[], abbreviation: string): number 
     return score;
 }
 
-function findContainedChord(notes: ScaleNote[], index: number) {
+function findContainedChord(notes: ScaleNote[], index: number, maxTones: number) {
     const root = notes[index];
     if (!root) return null;
     const byPitchClass = new Map(notes.map((note) => [note.pitchClass, note]));
     let best: { abbreviation: string; tones: DisplayChord["tones"]; score: number } | null = null;
     for (const chord of chordDefinitions) {
-        if (chord.intervals.length > 4) continue;
+        if (chord.intervals.length > maxTones) continue;
         const tones = chord.intervals.map((interval) => {
             const pitchClass = (root.pitchClass + (INTERVAL_SEMITONES[interval] ?? -100) + 12) % 12;
             const note = byPitchClass.get(pitchClass);
@@ -459,7 +479,7 @@ function findContainedChord(notes: ScaleNote[], index: number) {
 
 function findChordBySemitones(semitones: number[], preferred: string) {
     const key = semitones.join(",");
-    const matches = FOUR_NOTE_CHORDS.filter((chord) => chord.key === key);
+    const matches = NAMED_CHORDS.filter((chord) => chord.key === key);
     const chord = matches.find((entry) => entry.abbreviations.includes(preferred)) ?? matches[0];
     if (!chord) return null;
     return {
