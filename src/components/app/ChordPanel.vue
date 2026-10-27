@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ChordButton } from "@/components/ui/chord-button";
+import { playChord } from "@/composables/useAudio";
 import { useEdgeFade } from "@/composables/useEdgeFade";
 
 defineProps<{
@@ -19,7 +20,7 @@ const edgeFade = useEdgeFade(row);
 <template>
     <section>
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 class="font-display text-lg font-semibold tracking-tight">Diatonic chords</h2>
+            <h2 class="font-display text-lg font-semibold tracking-tight">Chords</h2>
             <p class="text-xs text-muted-foreground">
                 Select a chord to highlight its tones on the neck
             </p>
@@ -40,6 +41,7 @@ const edgeFade = useEdgeFade(row);
                 :numeral="chord.numeral"
                 :tones="chord.tones.map((tone) => tone.note)"
                 @click="$emit('toggle', index)"
+                @play="playChord(chord.tones.map((tone) => tone.note))"
             />
         </div>
     </section>

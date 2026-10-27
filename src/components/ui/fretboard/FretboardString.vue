@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { playTone } from "@/composables/useAudio";
 import {
     formatNoteLabel,
@@ -10,6 +10,7 @@ import {
 } from "@/composables/useNotes";
 import { type ChordNotes } from "@/composables/useChords";
 import { cn } from "@/lib/utils";
+import { Ripple } from "@/components/ui/ripple";
 
 type NoteKind = "root" | "chord" | "scale" | "muted" | "other";
 
@@ -26,7 +27,6 @@ const props = withDefaults(
         positionSpan?: number;
         notePreference?: ResolvedAccidentalPreference;
         showDegrees?: boolean | string;
-        showLabels?: boolean;
         showRest?: boolean | string;
         rootPitchClass?: number | null;
         chordRootPitchClass?: number | null;
@@ -43,7 +43,6 @@ const props = withDefaults(
         positionSpan: 5,
         notePreference: "sharp",
         showDegrees: false,
-        showLabels: true,
         showRest: false,
         rootPitchClass: null,
         chordRootPitchClass: null,
@@ -109,9 +108,25 @@ const kindClasses: Record<NoteKind, string> = {
     chord: "bg-tone-chord text-[#10213d] shadow-[0_0_0_4px_rgb(147_187_247/0.22)]",
     scale: "bg-tone-scale text-[#2a2420]",
     muted: "bg-[#ece6d6]/35 text-white/70",
-    // Opaque so the string doesn't run through the label
-    other: "bg-[var(--wood-open)] text-white/60 font-medium ring-1 ring-inset ring-white/10",
+    // Opaque so the string doesn't run through the label; matches the wood behind it
+    other: "bg-[var(--wood)] text-white/60 font-medium",
 };
+
+const rippleClasses: Record<NoteKind, string> = {
+    root: "bg-tone-root",
+    chord: "bg-tone-chord",
+    scale: "bg-tone-scale",
+    muted: "bg-tone-scale",
+    other: "bg-tone-scale",
+};
+
+const ripples = ref<Record<number, number>>({});
+
+function play(index: number) {
+    const note = notes.value[index];
+    ripples.value[index] = (ripples.value[index] ?? 0) + 1;
+    playTone(note.name, note.octave);
+}
 </script>
 
 <template>
@@ -125,22 +140,23 @@ const kindClasses: Record<NoteKind, string> = {
             :key="index"
             class="relative flex items-center justify-center"
         >
+            <Ripple :count="ripples[index] ?? 0" :class="['size-[26px] rounded-full', rippleClasses[note.kind]]" />
             <button
                 type="button"
                 :tabindex="note.visible ? 0 : -1"
                 :aria-label="`${note.name}${note.octave}`"
                 :class="
                     cn(
-                        'relative z-10 flex shrink-0 cursor-pointer items-center justify-center rounded-full tabular-nums text-[10px] font-semibold transition hover:scale-110 outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                        showLabels ? 'size-[26px]' : 'size-3.5',
+                        'relative z-10 flex size-[26px] shrink-0 cursor-pointer items-center justify-center rounded-full tabular-nums text-[10px] font-semibold transition hover:scale-110 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         kindClasses[note.kind],
+                        note.kind === 'other' && index === 0 ? 'bg-[var(--wood-open)]' : '',
                         !note.inView && note.kind !== 'other' ? 'opacity-30 shadow-none' : '',
                         !note.visible ? 'pointer-events-none opacity-0' : '',
                     )
                 "
-                @click="playTone(note.name, note.octave)"
+                @click="play(index)"
             >
-                <template v-if="showLabels">{{ note.label }}</template>
+                {{ note.label }}
             </button>
         </div>
     </div>

@@ -21,7 +21,6 @@ const props = withDefaults(
         positionSpan?: number;
         notePreference?: ResolvedAccidentalPreference;
         showDegrees: boolean | string;
-        showLabels?: boolean;
         showRest: boolean | string;
         rootPitchClass: number | null;
         chordRootPitchClass: number | null;
@@ -45,7 +44,6 @@ const props = withDefaults(
         positionSpan: 5,
         notePreference: "sharp",
         showDegrees: false,
-        showLabels: true,
         showRest: false,
         rootPitchClass: null,
         chordRootPitchClass: null,
@@ -121,7 +119,7 @@ watch(
                         :class="[
                             'relative',
                             fret === 0
-                                ? 'border-r-[6px] border-[var(--nut)] bg-[var(--wood-open)]'
+                                ? 'border-r-4 border-[var(--nut)] bg-[var(--wood-open)]'
                                 : 'border-r-2 border-[var(--fret-wire)] last:border-r-0',
                             inActiveRange(fret) ? 'bg-[var(--wood-highlight)]' : '',
                         ]"
@@ -154,7 +152,6 @@ watch(
                         :chord-notes="chordNotes"
                         :root-pitch-class="rootPitchClass"
                         :show-degrees="showDegrees"
-                        :show-labels="showLabels"
                         :show-rest="showRest"
                         :thickness="stringThickness(index)"
                     />

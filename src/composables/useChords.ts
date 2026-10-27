@@ -185,6 +185,19 @@ const chords: Chord[] = [
         abbreviations: ["add9"],
         intervals: ["1", "3", "5", "9"],
     },
+    {
+        id: 29,
+        name: "Dominant 7th sus 4",
+        abbreviations: ["7sus4"],
+        intervals: ["1", "4", "5", "♭7"],
+    },
+    {
+        // No fifth: the shape pentatonic scales give on their minor degrees (G B♭ C F)
+        id: 30,
+        name: "Minor 7th add 11",
+        abbreviations: ["m7(11)"],
+        intervals: ["1", "♭3", "11", "♭7"],
+    },
 ];
 
 export function chordsByPrimaryAbbreviation(): Record<string, Chord> {
