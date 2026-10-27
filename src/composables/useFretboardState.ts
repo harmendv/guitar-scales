@@ -17,7 +17,7 @@ import {
     chordsByPrimaryAbbreviation,
 } from "@/composables/useChords";
 import { use3nps } from "@/composables/use3nps";
-import { playTone } from "@/composables/useAudio";
+import { playSequence } from "@/composables/useAudio";
 import { usePositionView } from "@/composables/usePositionView";
 import type { FretboardViewMode } from "@/composables/useAppState";
 import type { Tuning } from "@/composables/useTunings";
@@ -349,9 +349,7 @@ export function useFretboardState(input: {
         if (activePosition.value != null) selectPosition(activePosition.value);
     }
 
-    let playTimers: ReturnType<typeof setTimeout>[] = [];
     function playScale() {
-        playTimers.forEach(clearTimeout);
         const rootPitchClassValue = rootPitchClass.value;
         if (rootPitchClassValue == null) return;
         // Start from the root in octave 3 (MIDI 48 = C3).
@@ -362,9 +360,7 @@ export function useFretboardState(input: {
                 : (scaleNote.pitchClass - rootPitchClassValue + 12) % 12;
             return { note: scaleNote.note, octave: Math.floor((rootMidi + offset) / 12) - 1 };
         });
-        playTimers = sequence.map((step, index) =>
-            setTimeout(() => playTone(step.note, step.octave), index * 280)
-        );
+        playSequence(sequence, 0.18);
     }
 
     return {

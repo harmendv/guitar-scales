@@ -92,7 +92,7 @@ function pluck(context: AudioContext, midi: number): AudioBuffer {
     return buffer;
 }
 
-function playMidi(context: AudioContext, midi: number, when = context.currentTime) {
+function playMidi(context: AudioContext, midi: number, when = context.currentTime): AudioBufferSourceNode {
     const source = context.createBufferSource();
     const gain = context.createGain();
 
@@ -102,6 +102,7 @@ function playMidi(context: AudioContext, midi: number, when = context.currentTim
     source.connect(gain);
     gain.connect(output ?? context.destination);
     source.start(when);
+    return source;
 }
 
 export async function playTone(note: string, octave: number): Promise<void> {
@@ -126,5 +127,34 @@ export async function playChord(notes: string[]): Promise<void> {
         }
         previous = midi;
         playMidi(context, midi, context.currentTime + index * STRUM_DELAY);
+    });
+}
+
+// Notes of the running sequence that haven't sounded yet, so a new one can cancel them.
+let pendingSequence: { source: AudioBufferSourceNode; when: number }[] = [];
+
+// Plays notes one after another on the audio clock. Timers would each wait for the context to
+// wake up on the first play and then fire together; this waits once and schedules every note.
+export async function playSequence(
+    steps: { note: string; octave: number }[],
+    interval: number
+): Promise<void> {
+    const context = await readyContext();
+    if (!context) return;
+
+    pendingSequence.forEach(({ source, when }) => {
+        if (when > context.currentTime) source.stop();
+    });
+
+    const midis = steps.map((step) => toMidi(step.note, step.octave));
+    // Synthesize every string up front so building one doesn't delay the next.
+    midis.forEach((midi) => midi != null && pluck(context, midi));
+
+    // A short lead keeps the first note from starting late on a busy main thread.
+    const start = context.currentTime + 0.05;
+    pendingSequence = midis.flatMap((midi, index) => {
+        if (midi == null) return [];
+        const when = start + index * interval;
+        return [{ source: playMidi(context, midi, when), when }];
     });
 }
