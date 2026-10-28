@@ -1,4 +1,4 @@
-import { scales } from "@/composables/useScales";
+import { scales } from "@/lib/scales";
 
 export interface Note {
     id: number;

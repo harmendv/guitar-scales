@@ -1,4 +1,4 @@
-import { getPitchClass } from "@/composables/useNotes";
+import { getPitchClass } from "@/lib/notes";
 
 // Plucked strings are synthesized with Karplus-Strong, so there's nothing to download.
 const DURATION = 2.5;

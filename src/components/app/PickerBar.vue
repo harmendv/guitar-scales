@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "reka-ui";
 import { Segmented } from "@/components/ui/segmented";
-import { formatNoteLabel } from "@/composables/useNotes";
+import { formatNoteLabel } from "@/lib/notes";
 import KeyPicker from "./pickers/KeyPicker.vue";
 import ModeButtons from "./pickers/ModeButtons.vue";
 import ScaleButtons from "./pickers/ScaleButtons.vue";

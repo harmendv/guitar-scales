@@ -1,4 +1,4 @@
-import { notes } from "@/composables/useNotes";
+import { notes } from "@/lib/notes";
 
 export interface InstrumentString {
     note: string;

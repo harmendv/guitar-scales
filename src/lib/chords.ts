@@ -1,7 +1,3 @@
-import { computed, type ComputedRef } from "vue";
-import type { ScaleFormulaEntry, Scale } from "@/composables/useScales";
-import type { ScaleNote } from "@/composables/useNotes";
-
 export interface Chord {
     id: number;
     name: string;
@@ -9,19 +5,23 @@ export interface Chord {
     intervals: string[];
 }
 
-export type ChordNotes = Record<string, ScaleNote & { interval?: string }>;
-
 // Fretboard view of the selected chords, keyed by pitch class: one colour per chord the note is
-// in, the colour of the chord it's the root of (if any), and the interval to label it with.
-export type ChordTones = Record<string, { colors: string[]; rootColor?: string; interval?: string }>;
+// in, the colour of the chord it's the root of (if any), the interval to label it with, the
+// chord's spelling of the note, and whether it falls outside the key.
+export type ChordTones = Record<
+    string,
+    { colors: string[]; rootColor?: string; interval?: string; note?: string; outside?: boolean }
+>;
 
 // Each degree keeps its own colour, so adding or removing a chord never recolours the others.
 export function chordColor(index: number): string {
     return `var(--chord-${(index % 8) + 1})`;
 }
 
-export interface ArpeggioOptions {
-    toneCount: 3 | 4;
+// Chords from outside the key take one of these while selected, clear of the degree colours.
+export const EXTRA_CHORD_COLOR_COUNT = 4;
+export function extraChordColor(index: number): string {
+    return `var(--chord-${(index % EXTRA_CHORD_COLOR_COUNT) + 9})`;
 }
 
 const chords: Chord[] = [
@@ -208,79 +208,5 @@ const chords: Chord[] = [
         intervals: ["1", "♭3", "11", "♭7"],
     },
 ];
-
-export function chordsByPrimaryAbbreviation(): Record<string, Chord> {
-    const map: Record<string, Chord> = {};
-    chords.forEach((chord) => {
-        chord.abbreviations.forEach((abbr) => {
-            map[abbr] = chord;
-        });
-    });
-    return map;
-}
-
-export function getChordIntervals(
-    chordExtension: string | number | undefined,
-    chordsMap: Record<string, Chord>
-): string[] | null {
-    if (!chordExtension) return null;
-    return chordsMap[String(chordExtension)]?.intervals ?? null;
-}
-
-export function getChordNotes(
-    chord: number | null,
-    scaleNotes: ScaleNote[],
-    chordIntervals: string[] | null,
-    selectedScaleIndex: number,
-    scales: Scale[],
-    options: ArpeggioOptions = { toneCount: 4 }
-): ChordNotes {
-    if (!chord || !scaleNotes.length || !chordIntervals) return {};
-    if (selectedScaleIndex < 0) return {};
-    const scaleFormula = scales[selectedScaleIndex].formula;
-    const scaleFormulaLength = scaleFormula.length;
-    const chordTones: ChordNotes = {};
-    const toneCount = Math.min(options.toneCount, chordIntervals.length);
-    const intervals = chordIntervals.slice(0, toneCount);
-    const chordToneIndexes = [
-        chord - 1,
-        chord - 1 + 2,
-        chord - 1 + 4,
-        scaleFormulaLength === 6 ? chord - 1 + 5 : chord - 1 + 6,
-    ].slice(0, toneCount);
-    chordToneIndexes.forEach((i, iterator) => {
-        if (i >= scaleFormulaLength) {
-            const refIndex = i - scaleFormulaLength;
-            chordTones[String(scaleNotes[refIndex].pitchClass)] = {
-                ...scaleNotes[refIndex],
-                interval: intervals[iterator],
-            };
-        } else {
-            chordTones[String(scaleNotes[i].pitchClass)] = {
-                ...scaleNotes[i],
-                interval: intervals[iterator],
-            };
-        }
-    });
-    return chordTones;
-}
-
-export function useDiatonicChords(
-    scaleNotes: ComputedRef<ScaleNote[]>,
-    selectedScaleIndex: ComputedRef<number>,
-    scales: Scale[]
-): ComputedRef<{ note: string; chord: string; degree: string }[]> {
-    return computed(() => {
-        const list: { note: string; chord: string; degree: string }[] = [];
-        const idx = selectedScaleIndex.value;
-        if (idx < 0) return list;
-        const formula = scales[idx].formula;
-        formula.forEach((entry: ScaleFormulaEntry, index: number) => {
-            const n = scaleNotes.value[index]?.note;
-            list.push({ note: n, chord: entry.chord, degree: entry.degree });
-        });
-        return list;
-    });
-}
 
 export { chords };

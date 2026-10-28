@@ -103,6 +103,11 @@
     --chord-6: #b99cff;
     --chord-7: #e8b48a;
     --chord-8: #c9c3b8;
+    /* Chords from outside the key (secondary dominants, borrowed chords), apart from the degree hues */
+    --chord-9: #ffa86b;
+    --chord-10: #cde55c;
+    --chord-11: #8f9dff;
+    --chord-12: #e7a0f0;
     --tone-scale: #ece6d6;
     --radius: 0.625rem;
 
@@ -192,6 +197,12 @@ html:has(body[data-theme="dark"]) {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: color-mix(in oklab, var(--foreground) 75%, transparent);
+}
+
+/* A chord tone outside the key: a dashed ring inside the dot, clear of the chord-root ring */
+.outside-tone {
+    outline: 1.5px dashed rgb(26 25 24 / 0.6);
+    outline-offset: -4px;
 }
 
 /* Horizontal scrollers that should still swipe but show no bar */

@@ -4,7 +4,7 @@ import {
     isValidTuning,
     type InstrumentString,
     type Tuning,
-} from "@/composables/useTunings";
+} from "@/lib/tunings";
 
 const STORAGE_KEY = "guitar-scales.custom-tunings.v1";
 

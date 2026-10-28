@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { Fretboard } from "@/components/ui/fretboard";
 import DialogTuningEditor from "@/components/tuning-editor/Dialog.TuningEditor.vue";
 import AppHeader from "@/components/app/AppHeader.vue";
@@ -47,6 +48,8 @@ const {
 const {
     accidentalPreferenceOptions,
     activePosition,
+    borrowedChords,
+    chordColors,
     activeThreeNpsShape,
     chordLegend,
     chordTones,
@@ -66,6 +69,7 @@ const {
     safePositionStartFret,
     scaleNotes,
     scalesOptions,
+    secondaryChords,
     selectPosition,
     setPositionStyle,
     shapeNotesPerString,
@@ -89,6 +93,7 @@ const {
     viewMode,
 });
 
+const hasOutsideTones = computed(() => Object.values(chordTones.value).some((tone) => tone.outside));
 </script>
 
 <template>
@@ -152,6 +157,9 @@ const {
             v-model:chord-size="chordSize"
             :selected-chords="selectedChords"
             :chords="chords"
+            :secondary-chords="secondaryChords"
+            :borrowed-chords="borrowedChords"
+            :chord-colors="chordColors"
             @toggle="toggleChord"
         />
 
@@ -200,6 +208,9 @@ const {
                         </span>
                         <span class="flex items-center gap-1.5">
                             <span class="size-2.5 rounded-full bg-[color-mix(in_srgb,var(--tone-scale)_35%,var(--wood))]"></span>Other scale tone
+                        </span>
+                        <span v-if="hasOutsideTones" class="flex items-center gap-1.5">
+                            <span class="outside-tone size-2.5 rounded-full bg-[var(--chord-8)] [outline-offset:-2px]"></span>Outside the key
                         </span>
                     </template>
                     <template v-else>

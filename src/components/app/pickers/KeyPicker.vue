@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getPitchClass } from "@/composables/useNotes";
+import { getPitchClass } from "@/lib/notes";
 import { pill, pillActive, pillIdle } from "./styles";
 
 defineProps<{

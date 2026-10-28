@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { Play } from "lucide-vue-next";
 import { Ripple } from "@/components/ui/ripple";
-import { formatNoteLabel } from "@/composables/useNotes";
+import { formatNoteLabel } from "@/lib/notes";
 
 defineProps<{
     active: boolean;
@@ -12,6 +12,9 @@ defineProps<{
     note: string;
     numeral: string;
     tones: string[];
+    // Where a chord from outside the key goes next, and the mode a borrowed one comes from
+    caption?: string;
+    source?: string;
 }>();
 
 const emit = defineEmits(["click", "play"]);
@@ -44,6 +47,8 @@ function play() {
             <span class="mt-2 tabular-nums text-[10px] tracking-wide opacity-70">
                 {{ tones.map(formatNoteLabel).join(" · ") }}
             </span>
+            <span v-if="caption" class="mt-2 text-[11px] font-semibold">{{ caption }}</span>
+            <span v-if="source" class="text-[10px] opacity-60">from {{ source }}</span>
         </button>
         <div class="absolute top-2 right-2 size-7">
             <Ripple :count="ripples" :scale="2.2" :class="['inset-0 rounded-lg', active ? 'bg-black/20' : 'bg-primary']" />
