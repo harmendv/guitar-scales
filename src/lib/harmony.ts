@@ -259,11 +259,24 @@ function formatChordName(note: string, chord: string): string {
 
 // The borrowed chords guitarists reach for most, by degree and triad quality, in that order.
 const COMMON_BORROWED = ["4m", "♭6", "♭7", "♭3", "2dim", "5m", "♭2", "4", "5", "1", "2", "1m", "2m", "6m", "♭7m", "♭3m", "♭6m"];
-// Where each borrowed chord usually goes, as a degree of the key: iv and ♭VII back home, ♭VI on
-// to ♭VII, ii° and Lydian II to V. A major I in a minor key is the Picardy third that ends it.
-const BORROWED_RESOLUTIONS: Record<string, string> = {
-    "4m": "1", "♭6": "♭7", "♭7": "1", "♭3": "4", "2dim": "5", "5m": "1", "♭2": "1",
-    "4": "1", "5": "1", "2": "5", "2m": "5", "♭7m": "1", "♭6m": "1",
+// Where each borrowed chord usually goes, as a degree of the key and, where it matters, the
+// triad it needs there: iv and ♭VII back home, ♭VI on to a major ♭VII, ii° and Lydian II to a
+// major V. A major I in a minor key is the Picardy third that ends it.
+const MAJOR = "";
+const BORROWED_RESOLUTIONS: Record<string, { degree: string; quality?: string }> = {
+    "4m": { degree: "1" },
+    "♭6": { degree: "♭7", quality: MAJOR },
+    "♭7": { degree: "1" },
+    "♭3": { degree: "4" },
+    "2dim": { degree: "5", quality: MAJOR },
+    "5m": { degree: "1" },
+    "♭2": { degree: "1" },
+    "4": { degree: "1" },
+    "5": { degree: "1" },
+    "2": { degree: "5", quality: MAJOR },
+    "2m": { degree: "5", quality: MAJOR },
+    "♭7m": { degree: "1" },
+    "♭6m": { degree: "1" },
 };
 
 // Parallel modes to borrow from, most familiar first, so the same chord is credited to the
@@ -313,13 +326,25 @@ export function buildBorrowedChords(
             });
         });
     });
-    // Name where each one goes in this key: the key's own chord on that degree, else a borrowed one
+    // Name where each one goes in this key: the key's own chord on that degree, else a borrowed
+    // one, followed on until it lands in the key (♭VI → ♭VII → I is A♭ → B♭ → C in C major)
     const candidates = [...diatonic, ...borrowed.map(({ chord }) => chord)];
     function caption(shape: string): string | undefined {
         if (shape === "1") return "Final chord";
-        const degree = BORROWED_RESOLUTIONS[shape];
-        const target = candidates.find((chord) => chord.degree === degree);
-        return target ? `→ ${formatChordName(target.note, target.chord)}` : undefined;
+        const steps: string[] = [];
+        let resolution = BORROWED_RESOLUTIONS[shape];
+        while (resolution != null && steps.length < 3) {
+            const { degree, quality } = resolution;
+            // ii° wants G, not the Gm of C Dorian, even if that means borrowing G as well
+            const target = candidates.find(
+                (chord) => chord.degree === degree && (quality == null || triadQuality(chord) === quality)
+            );
+            if (!target) break;
+            steps.push(formatChordName(target.note, target.chord));
+            if (target.kind === "diatonic") break;
+            resolution = BORROWED_RESOLUTIONS[`${target.degree}${triadQuality(target) ?? "?"}`];
+        }
+        return steps.length ? `→ ${steps.join(" → ")}` : undefined;
     }
     return borrowed
         .sort((left, right) => left.rank - right.rank)

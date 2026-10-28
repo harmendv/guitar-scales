@@ -34,22 +34,22 @@ const groups = computed(() => ({
     borrowed: props.borrowedChords,
 }));
 // Each tab counts its selected chords, so a selection on another tab isn't forgotten
-const groupOptions = computed(() =>
-    (
-        [
-            { label: "In key", value: "diatonic" },
-            { label: "Secondary", value: "secondary" },
-            { label: "Borrowed", value: "borrowed" },
-        ] as const
-    )
-        .filter((option) => groups.value[option.value].length > 0)
-        .map((option) => {
-            const selected = groups.value[option.value].filter((chord) =>
-                props.selectedChords.includes(chord.id)
-            ).length;
-            return { label: selected ? `${option.label} · ${selected}` : option.label, value: option.value };
-        })
-);
+const groupOptions = computed(() => tabOptions((label, selected) => (selected ? `${label} · ${selected}` : label)));
+// Phones have no room for the count next to Triads/7ths, so a dot marks a tab with selections
+const compactGroupOptions = computed(() => tabOptions((label, selected) => (selected ? `${label} •` : label)));
+const GROUP_LABELS = [
+    { label: "In key", value: "diatonic" },
+    { label: "Secondary", value: "secondary" },
+    { label: "Borrowed", value: "borrowed" },
+] as const;
+function tabOptions(format: (label: string, selected: number) => string) {
+    return GROUP_LABELS.filter((option) => groups.value[option.value].length > 0).map((option) => {
+        const selected = groups.value[option.value].filter((chord) =>
+            props.selectedChords.includes(chord.id)
+        ).length;
+        return { label: format(option.label, selected), value: option.value };
+    });
+}
 const descriptions: Record<ChordGroup, string> = {
     diatonic: "Select chords to compare their tones on the neck",
     secondary: "Dominants that lead into the chords of the key",
@@ -67,25 +67,42 @@ const edgeFade = useEdgeFade(row);
 
 <template>
     <section>
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-3">
+        <div class="mb-3 flex flex-col gap-1">
+            <!-- From sm up both toggles sit small at the end of the title row, like the Key header's -->
+            <div class="flex h-7 items-center justify-between gap-3">
                 <h2 class="font-display text-lg font-semibold tracking-tight">Chords</h2>
-                <Segmented
-                    v-model="chordSize"
-                    :options="chordSizeOptions"
-                    class="p-0.5 [&_button]:h-6 [&_button]:px-2.5 [&_button]:text-[13px]"
-                />
+                <div class="hidden items-center gap-2 sm:flex">
+                    <Segmented
+                        v-if="groupOptions.length > 1"
+                        v-model="group"
+                        :options="groupOptions"
+                        class="p-0.5 [&_button]:h-6 [&_button]:px-2.5 [&_button]:text-[13px]"
+                    />
+                    <Segmented
+                        v-model="chordSize"
+                        :options="chordSizeOptions"
+                        class="p-0.5 [&_button]:h-6 [&_button]:px-2.5 [&_button]:text-[13px]"
+                    />
+                </div>
             </div>
             <p class="text-xs text-muted-foreground">
                 {{ descriptions[group] }}
             </p>
         </div>
-        <Segmented
-            v-if="groupOptions.length > 1"
-            v-model="group"
-            :options="groupOptions"
-            class="mb-3 p-0.5 [&_button]:h-7 [&_button]:px-3 [&_button]:text-[13px]"
-        />
+        <!-- Phones: both toggles side by side under the description, big enough to tap -->
+        <div class="mb-3 flex gap-2 sm:hidden">
+            <Segmented
+                v-model="chordSize"
+                :options="chordSizeOptions"
+                class="shrink-0 [&_button]:px-2.5 [&_button]:text-[13px]"
+            />
+            <Segmented
+                v-if="compactGroupOptions.length > 1"
+                v-model="group"
+                :options="compactGroupOptions"
+                class="flex min-w-0 flex-1 [&_button]:flex-1 [&_button]:px-1.5 [&_button]:text-[13px]"
+            />
+        </div>
         <!-- Phones: one swipeable row running edge to edge, padded so the play ripple isn't
              clipped by the scroller; sm and up: a grid -->
         <div

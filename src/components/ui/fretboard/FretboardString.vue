@@ -160,10 +160,8 @@ function play(index: number) {
             :key="index"
             class="relative flex items-center justify-center"
         >
-            <!-- 1.35x (35px) stays inside the narrowest 36px fret, so it never spills onto the next note -->
             <Ripple
                 :count="ripples[index] ?? 0"
-                :scale="1.35"
                 :class="['size-[26px] rounded-full', rippleClasses[note.kind]]"
                 :style="note.rippleColor ? { background: note.rippleColor } : undefined"
             />

@@ -81,8 +81,8 @@ describe("borrowed chords", () => {
         expect(borrowed.slice(0, 4).map((chord) => chord.numeral)).toEqual(["iv", "♭VI", "♭VII", "♭III"]);
         expect(borrowed.slice(0, 4).map(name)).toEqual(["Fm", "Ab", "Bb", "Eb"]);
         expect(borrowed[0].source).toBe("Aeolian");
-        // iv and ♭VII lead home, ♭VI on to ♭VII, ♭III to IV
-        expect(borrowed.slice(0, 4).map((chord) => chord.caption)).toEqual(["→ C", "→ B♭", "→ C", "→ F"]);
+        // iv and ♭VII lead home, ♭VI through ♭VII (itself borrowed) to I, ♭III to IV
+        expect(borrowed.slice(0, 4).map((chord) => chord.caption)).toEqual(["→ C", "→ B♭ → C", "→ C", "→ F"]);
         expect(borrowed[0].id).toBe("aeolian-4");
         expect(borrowed.length).toBeLessThanOrEqual(7);
     });
@@ -102,10 +102,27 @@ describe("borrowed chords", () => {
     });
 });
 
+describe("borrowed chords in C Dorian", () => {
+    const { borrowed } = key("major", 2, "Bb", 3);
+    const captionOf = (numeral: string) => borrowed.find((chord) => chord.numeral === numeral)?.caption;
+
+    it("lands on the key's own chord when it can", () => {
+        // B♭ is in C Dorian, so ♭VI needs only one step
+        expect(captionOf("♭VI")).toBe("→ B♭");
+        expect(captionOf("iv")).toBe("→ Cm");
+    });
+
+    it("goes through a borrowed major V rather than the key's Gm", () => {
+        expect(captionOf("ii°")).toBe("→ G → Cm");
+        expect(captionOf("II")).toBe("→ G → Cm");
+    });
+});
+
 describe("borrowed sevenths", () => {
     it("offers one chord per degree, from the most familiar mode", () => {
         const { borrowed } = key("major", 1, "C");
         expect(borrowed.filter((chord) => chord.degree === "♭6").map(name)).toEqual(["Abmaj7"]);
         expect(borrowed.find((chord) => chord.degree === "♭6")?.source).toBe("Aeolian");
+        expect(borrowed.find((chord) => chord.degree === "♭6")?.caption).toBe("→ B♭7 → Cmaj7");
     });
 });
