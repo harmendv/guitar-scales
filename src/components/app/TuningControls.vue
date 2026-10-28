@@ -7,7 +7,7 @@ import {
     SelectItem,
     SelectTrigger,
 } from "@/components/ui/select";
-import type { Tuning } from "@/composables/useTunings";
+import type { Tuning } from "@/lib/tunings";
 import { cn } from "@/lib/utils";
 
 const props = defineProps<{

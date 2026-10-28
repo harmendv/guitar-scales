@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch, nextTick } from "vue";
-import { type ResolvedAccidentalPreference, type ScaleNote } from "@/composables/useNotes"
-import { type ChordTones } from "@/composables/useChords";
+import { type ResolvedAccidentalPreference, type ScaleNote } from "@/lib/notes"
+import { type ChordTones } from "@/lib/chords";
 import FretboardString from "./FretboardString.vue";
 
 interface GuitarString {

@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-import { playTone } from "@/composables/useAudio";
+import { playTone } from "@/lib/audio";
 import {
     formatNoteLabel,
     getNoteByOffset,
     getPitchClass,
     type ResolvedAccidentalPreference,
     type ScaleNote,
-} from "@/composables/useNotes";
-import { type ChordTones } from "@/composables/useChords";
+} from "@/lib/notes";
+import { type ChordTones } from "@/lib/chords";
 import { cn } from "@/lib/utils";
 import { Ripple } from "@/components/ui/ripple";
 
@@ -86,7 +86,8 @@ const notes = computed(() => {
                   : true;
 
         // Use the scale's own spelling (E♭ in C Dorian), even if the neck defaults to sharps.
-        let label: string = formatNoteLabel(scaleNote?.note ?? note);
+        // A chord tone from outside the key takes the chord's spelling (G♯ in E7, not A♭).
+        let label: string = formatNoteLabel(scaleNote?.note ?? chordTone?.note ?? note);
         if (props.showDegrees) {
             if (chordActive && chordTone?.interval) label = chordTone.interval;
             else if (!chordActive && scaleNote) label = scaleNote.degree;
@@ -99,6 +100,7 @@ const notes = computed(() => {
             label,
             inView,
             chordStyle: chordTone ? chordToneStyle(chordTone) : undefined,
+            outside: Boolean(chordTone?.outside),
             rippleColor: chordTone?.colors[0],
             visible: Boolean(props.showRest) || (inView && kind !== "other"),
         };
@@ -174,6 +176,7 @@ function play(index: number) {
                         'relative z-10 flex size-[26px] shrink-0 cursor-pointer items-center justify-center rounded-full tabular-nums text-[10px] font-semibold transition hover:scale-110 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-ring',
                         kindClasses[note.kind],
                         note.kind === 'other' && index === 0 ? 'bg-[var(--wood-open)]' : '',
+                        note.kind === 'chord' && note.outside ? 'outside-tone' : '',
                         !note.inView && note.kind !== 'other' ? 'opacity-30 shadow-none' : '',
                         !note.visible ? 'pointer-events-none opacity-0' : '',
                     )

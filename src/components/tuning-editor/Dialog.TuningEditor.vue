@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { Plus } from "lucide-vue-next";
-import { notes } from "@/composables/useNotes";
-import { isValidTuning, type InstrumentString } from "@/composables/useTunings";
+import { notes } from "@/lib/notes";
+import { isValidTuning, type InstrumentString } from "@/lib/tunings";
 import { Button } from "@/components/ui/button";
 
 const MIN_STRINGS = 1;

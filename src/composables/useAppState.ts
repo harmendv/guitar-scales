@@ -1,15 +1,15 @@
 import { computed, ref, watch } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
 import { useCustomTunings } from "@/composables/useCustomTunings";
-import { getModeRootNote, type AccidentalPreference } from "@/composables/useNotes";
-import { scalesFlatMap } from "@/composables/useScales";
+import { getModeRootNote, type AccidentalPreference } from "@/lib/notes";
+import { scalesFlatMap } from "@/lib/scales";
 import type { ChordSize } from "@/composables/useFretboardState";
 import {
     builtInTunings,
     deserializeTuning,
     serializeTuning,
     type InstrumentString,
-} from "@/composables/useTunings";
+} from "@/lib/tunings";
 
 export type FretboardViewMode = "full" | "3nps" | "position";
 
@@ -36,12 +36,13 @@ export function useAppState() {
                   ) || (params.note as string)
                 : "C")
     );
-    // Selected chords as 1-based degrees, e.g. `chord=1,4,5`; a single `chord=2` from older links still parses.
-    const chords = ref<number[]>(
+    // Selected chords by id: degrees for chords in the key, `V/2` for secondary dominants and
+    // `aeolian-6` for borrowed chords, e.g. `chord=1,4,V/2`. Older links only have degrees.
+    const chords = ref<string[]>(
         String(params.chord ?? "")
             .split(",")
-            .map((value) => Number.parseInt(value, 10))
-            .filter((value) => Number.isInteger(value) && value > 0)
+            .map((value) => value.trim())
+            .filter(Boolean)
     );
     const chordSize = ref<ChordSize>(params.chordSize === "sevenths" ? "sevenths" : "triads");
     const noteNames = ref<string>(params.noteNames === "degrees" ? "degrees" : "notes");

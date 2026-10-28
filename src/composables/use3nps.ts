@@ -1,5 +1,5 @@
 import { computed, type ComputedRef } from "vue";
-import { getNoteByOffset, getPitchClass, type ScaleNote } from "@/composables/useNotes";
+import { getNoteByOffset, getPitchClass, type ScaleNote } from "@/lib/notes";
 
 interface InstrumentString {
     note: string;

@@ -1,5 +1,5 @@
 import { computed, ref, watch, type ComputedRef, type Ref } from "vue";
-import { scales, scalesFlatMap } from "@/composables/useScales";
+import { scales, scalesFlatMap } from "@/lib/scales";
 import {
     formatNoteLabel,
     formatPitchClass,
@@ -9,25 +9,31 @@ import {
     type AccidentalPreference,
     type ResolvedAccidentalPreference,
     type ScaleNote,
-} from "@/composables/useNotes";
+} from "@/lib/notes";
 import {
     type ChordTones,
     chordColor,
-    chords as chordDefinitions,
-    chordsByPrimaryAbbreviation,
-} from "@/composables/useChords";
+    extraChordColor,
+} from "@/lib/chords";
+import {
+    buildBorrowedChords,
+    buildDiatonicChords,
+    buildSecondaryDominants,
+    spellByLetter,
+    type DisplayChord,
+} from "@/lib/harmony";
 import { use3nps } from "@/composables/use3nps";
-import { playSequence } from "@/composables/useAudio";
+import { playSequence } from "@/lib/audio";
 import { usePositionView } from "@/composables/usePositionView";
 import type { FretboardViewMode } from "@/composables/useAppState";
-import type { Tuning } from "@/composables/useTunings";
+import type { Tuning } from "@/lib/tunings";
 
 export type PositionStyle = "box" | "3nps";
 // Triads stack three scale notes (1-3-5), sevenths four (1-3-5-7)
 export type ChordSize = "triads" | "sevenths";
 
 export function useFretboardState(input: {
-    selectedChords: Ref<number[]>;
+    selectedChords: Ref<string[]>;
     chordSize: Ref<ChordSize>;
     accidentalPreference: Ref<AccidentalPreference>;
     note: Ref<string>;
@@ -149,64 +155,70 @@ export function useFretboardState(input: {
             ...scale.formula.slice(0, input.mode.value - 1),
         ];
     });
-    const chords = computed<DisplayChord[]>(() => {
-        // Stack every other scale note and name the chord from the notes it actually contains.
-        const notes = chordScaleNotes.value;
-        const count = notes.length;
-        const toneCount = input.chordSize.value === "triads" ? 3 : 4;
-        return modeFormula.value.map((entry, index) => {
-            const degree = notes[index]?.degree ?? entry.degree;
-            // Stacking every other note of a five-note scale gives quartal shapes, so use the
-            // fullest standard chord on this degree whose notes are all in the scale instead.
-            const contained = count < 6 ? findContainedChord(notes, index, toneCount) : null;
-            if (contained) {
-                return {
-                    note: notes[index].note,
-                    chord: contained.abbreviation,
-                    degree,
-                    numeral: getRomanNumeral(degree, contained.abbreviation),
-                    tones: contained.tones,
-                };
+    const toneCount = computed(() => (input.chordSize.value === "triads" ? 3 : 4));
+    const chords = computed<DisplayChord[]>(() =>
+        buildDiatonicChords(chordScaleNotes.value, modeFormula.value, toneCount.value)
+    );
+    // Beyond the key: dominants of its chords, and chords borrowed from parallel modes
+    const secondaryChords = computed(() => buildSecondaryDominants(chords.value, toneCount.value));
+    const borrowedChords = computed(() =>
+        buildBorrowedChords(chordScaleNotes.value, chords.value, toneCount.value)
+    );
+    const allChords = computed(() => [
+        ...chords.value,
+        ...secondaryChords.value,
+        ...borrowedChords.value,
+    ]);
+    // Chords from outside the key take the first free extra colour when selected and keep it
+    // until they're deselected, so picking another never recolours the ones already showing.
+    const extraColorSlots = ref<Record<string, number>>({});
+    watch(
+        () => input.selectedChords.value,
+        (selected) => {
+            const slots: Record<string, number> = {};
+            for (const id of selected) {
+                if (/^\d+$/.test(id)) continue;
+                const previous = extraColorSlots.value[id];
+                if (previous != null) slots[id] = previous;
             }
-            const stacked = [index, index + 2, index + 4, count === 6 ? index + 5 : index + 6]
-                .slice(0, toneCount)
-                .map((noteIndex) => notes[noteIndex % count])
-                .filter(Boolean);
-            const rootPitchClassValue = stacked[0]?.pitchClass ?? 0;
-            const semitones = stacked.map((tone) => (tone.pitchClass - rootPitchClassValue + 12) % 12);
-            const match = findChordBySemitones(semitones, entry.chord);
-            const order = stacked.map((_, toneIndex) => toneIndex);
-            // Without a chord name, list the formula low to high so it reads like one: (♭3 4 ♭7).
-            if (!match) order.sort((left, right) => semitones[left] - semitones[right]);
-            const chord = match?.abbreviation ?? `(${order.slice(1).map((toneIndex) => SEMITONE_INTERVALS[semitones[toneIndex]]).join(" ")})`;
-            const tones = order.map((toneIndex) => ({
-                ...stacked[toneIndex],
-                interval: match?.intervals[toneIndex] ?? SEMITONE_INTERVALS[semitones[toneIndex]],
-            }));
-            return {
-                note: notes[index]?.note ?? "",
-                chord,
-                degree,
-                numeral: getRomanNumeral(degree, chord),
-                tones,
-            };
-        });
-    });
-    // Selected chords in degree order, each with its colour
+            for (const id of selected) {
+                if (/^\d+$/.test(id) || slots[id] != null) continue;
+                const used = new Set(Object.values(slots));
+                let slot = 0;
+                while (used.has(slot)) slot++;
+                slots[id] = slot;
+            }
+            extraColorSlots.value = slots;
+        },
+        { immediate: true }
+    );
+    function colorOf(chord: DisplayChord): string {
+        return chord.kind === "diatonic"
+            ? chordColor(Number(chord.id) - 1)
+            : extraChordColor(extraColorSlots.value[chord.id] ?? 0);
+    }
+    const chordColors = computed<Record<string, string>>(() =>
+        Object.fromEntries(allChords.value.map((chord) => [chord.id, colorOf(chord)]))
+    );
+    // Selected chords in panel order (in key, secondary, borrowed), each with its colour
     const selectedChordList = computed(() =>
-        [...input.selectedChords.value]
-            .sort((left, right) => left - right)
-            .map((degree) => ({ degree, chord: chords.value[degree - 1], color: chordColor(degree - 1) }))
-            .filter((entry) => entry.chord != null)
+        allChords.value
+            .filter((chord) => input.selectedChords.value.includes(chord.id))
+            .map((chord) => ({ chord, color: colorOf(chord) }))
     );
     const modeRootNote = computed(() => scaleNotes.value[0]?.note ?? input.note.value);
     const rootPitchClass = computed(() => scaleNotes.value[0]?.pitchClass ?? null);
     const chordTones = computed<ChordTones>(() => {
         const tones: ChordTones = {};
+        const inScale = new Set(scaleNotes.value.map((scaleNote) => scaleNote.pitchClass));
         for (const { chord, color } of selectedChordList.value) {
             const chordRoot = getPitchClass(chord.note);
             for (const tone of chord.tones) {
-                const entry = (tones[String(tone.pitchClass)] ??= { colors: [] });
+                const entry = (tones[String(tone.pitchClass)] ??= {
+                    colors: [],
+                    note: tone.note,
+                    outside: !inScale.has(tone.pitchClass),
+                });
                 entry.colors.push(color);
                 // A note that's some chord's root is labelled as that root (1)
                 if (tone.pitchClass === chordRoot) {
@@ -327,12 +339,11 @@ export function useFretboardState(input: {
         { immediate: true }
     );
 
-    function toggleChord(index: number) {
-        const degree = index + 1;
+    function toggleChord(id: string) {
         const selected = input.selectedChords.value;
-        input.selectedChords.value = selected.includes(degree)
-            ? selected.filter((value) => value !== degree)
-            : [...selected, degree];
+        input.selectedChords.value = selected.includes(id)
+            ? selected.filter((value) => value !== id)
+            : [...selected, id];
     }
 
     function selectPosition(index: number | null) {
@@ -364,6 +375,8 @@ export function useFretboardState(input: {
     }
 
     return {
+        borrowedChords,
+        chordColors,
         chordLegend,
         chordTones,
         accidentalPreferenceOptions,
@@ -385,6 +398,7 @@ export function useFretboardState(input: {
         safePositionStartFret,
         scaleNotes,
         scalesOptions,
+        secondaryChords,
         selectPosition,
         setPositionStyle,
         shapeNotesPerString,
@@ -397,109 +411,3 @@ export function useFretboardState(input: {
 // F, B♭, E♭, A♭, D♭: parent keys that are written with flats.
 const FLAT_KEY_PITCH_CLASSES = [5, 10, 3, 8, 1];
 const KEY_NAMES = ["C", "Db", "D", "Eb", "E", "F", "F♯", "G", "Ab", "A", "Bb", "B"];
-
-interface DisplayChord {
-    note: string;
-    chord: string;
-    degree: string;
-    numeral: string;
-    tones: (ScaleNote & { interval?: string })[];
-}
-
-const INTERVAL_SEMITONES: Record<string, number> = {
-    "1": 0, "♭2": 1, "2": 2, "♭3": 3, "3": 4, "4": 5, "♭5": 6, "5": 7,
-    "♯5": 8, "♭6": 8, "6": 9, "♭♭7": 9, "♭7": 10, "7": 11, "♭9": 1, "9": 2, "11": 5, "13": 9,
-};
-const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
-const LETTER_PITCH_CLASSES = [0, 2, 4, 5, 7, 9, 11];
-
-function spellByLetter(notes: ScaleNote[]): ScaleNote[] {
-    const rootLetterIndex = LETTERS.indexOf(notes[0]?.note[0] ?? "");
-    if (rootLetterIndex < 0) return notes;
-    const rootPitchClassValue = notes[0].pitchClass;
-    return notes.map((scaleNote, index) => {
-        const letterIndex = (rootLetterIndex + index) % 7;
-        const offset = ((scaleNote.pitchClass - LETTER_PITCH_CLASSES[letterIndex] + 18) % 12) - 6;
-        const accidental = offset === 1 ? "♯" : offset === -1 ? "b" : offset === 0 ? "" : null;
-        const note = `${LETTERS[letterIndex]}${accidental ?? ""}`;
-        const semitones = (scaleNote.pitchClass - rootPitchClassValue + 12) % 12;
-        const degreeOffset = semitones - LETTER_PITCH_CLASSES[index];
-        const degreeAccidental = degreeOffset === 1 ? "♯" : degreeOffset === -1 ? "♭" : degreeOffset === 0 ? "" : null;
-        return {
-            ...scaleNote,
-            // E♯, C♭ and double accidentals aren't supported elsewhere, so keep the enharmonic name there.
-            note: accidental != null && getPitchClass(note) === scaleNote.pitchClass ? note : scaleNote.note,
-            degree: degreeAccidental != null ? `${degreeAccidental}${index + 1}` : scaleNote.degree,
-        };
-    });
-}
-
-const SEMITONE_INTERVALS = ["1", "♭2", "2", "♭3", "3", "4", "♭5", "5", "♯5", "6", "♭7", "7"];
-const NAMED_CHORDS = chordDefinitions
-    .filter((chord) => chord.intervals.length <= 4)
-    .map((chord) => ({
-        abbreviations: chord.abbreviations,
-        intervals: chord.intervals,
-        key: chord.intervals.map((interval) => INTERVAL_SEMITONES[interval] ?? -1).join(","),
-    }));
-
-// Seventh chords first, then sixths and add9s, then triads, with sus chords last; a full
-// chord beats one of the same size without its fifth.
-function containedChordScore(intervals: string[], abbreviation: string): number {
-    let score = intervals.length * 10;
-    if (intervals.some((interval) => interval.endsWith("7"))) score += 3;
-    else if (intervals.includes("6")) score += 2;
-    else if (intervals.includes("9")) score += 1;
-    if (abbreviation.includes("sus")) score -= 5;
-    if (!intervals.some((interval) => interval.endsWith("5"))) score -= 2;
-    return score;
-}
-
-function findContainedChord(notes: ScaleNote[], index: number, maxTones: number) {
-    const root = notes[index];
-    if (!root) return null;
-    const byPitchClass = new Map(notes.map((note) => [note.pitchClass, note]));
-    let best: { abbreviation: string; tones: DisplayChord["tones"]; score: number } | null = null;
-    for (const chord of chordDefinitions) {
-        if (chord.intervals.length > maxTones) continue;
-        const tones = chord.intervals.map((interval) => {
-            const pitchClass = (root.pitchClass + (INTERVAL_SEMITONES[interval] ?? -100) + 12) % 12;
-            const note = byPitchClass.get(pitchClass);
-            return note ? { ...note, interval } : null;
-        });
-        if (tones.some((tone) => tone == null)) continue;
-        const abbreviation = chord.abbreviations[0];
-        const score = containedChordScore(chord.intervals, abbreviation);
-        if (!best || score > best.score) {
-            best = { abbreviation, tones: tones as DisplayChord["tones"], score };
-        }
-    }
-    return best;
-}
-
-function findChordBySemitones(semitones: number[], preferred: string) {
-    const key = semitones.join(",");
-    const matches = NAMED_CHORDS.filter((chord) => chord.key === key);
-    const chord = matches.find((entry) => entry.abbreviations.includes(preferred)) ?? matches[0];
-    if (!chord) return null;
-    return {
-        abbreviation: chord.abbreviations.includes(preferred) ? preferred : chord.abbreviations[0],
-        intervals: chord.intervals,
-    };
-}
-
-const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII"];
-
-function getRomanNumeral(degree: string, chord: string): string {
-    const accidental = degree.match(/^[♭♯]/)?.[0] ?? "";
-    const degreeNumber = Number.parseInt(degree.replace(/^[♭♯]/, ""), 10);
-    const numeral = ROMAN_NUMERALS[degreeNumber - 1] ?? degree;
-    const isMinor = /^(m(?!aj)|dim)/.test(chord) || (chord.startsWith("(") && chord.includes("♭3"));
-    let suffix = chord;
-    if (chord === "m7♭5") suffix = "ø7";
-    else if (chord.startsWith("dim")) suffix = chord.replace("dim", "°");
-    else if (chord.startsWith("aug")) suffix = chord.replace("aug", "+");
-    else if (chord.startsWith("mMaj")) suffix = chord.replace("mMaj", "maj");
-    else if (isMinor && !chord.startsWith("(")) suffix = chord.slice(1);
-    return `${accidental}${isMinor ? numeral.toLowerCase() : numeral}${suffix}`;
-}
