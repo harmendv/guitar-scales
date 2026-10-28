@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useUrlSearchParams } from "@vueuse/core";
 import { useCustomTunings } from "@/composables/useCustomTunings";
 import { getModeRootNote, type AccidentalPreference } from "@/lib/notes";
@@ -12,6 +12,10 @@ import {
 } from "@/lib/tunings";
 
 export type FretboardViewMode = "full" | "3nps" | "position";
+export interface ActiveShape {
+    chord: string;
+    index: number;
+}
 
 export function useAppState() {
     const params = useUrlSearchParams("history");
@@ -43,6 +47,16 @@ export function useAppState() {
             .split(",")
             .map((value) => value.trim())
             .filter(Boolean)
+    );
+    // The chord shape shown on the neck: a selected chord's id and its shape, 1-based in the URL
+    // (`voicing=4:2` is the second shape of IV); none shows every chord tone
+    const voicingParam = String(params.voicing ?? "");
+    const voicingSeparator = voicingParam.lastIndexOf(":");
+    const voicingNumber = Number.parseInt(voicingParam.slice(voicingSeparator + 1), 10);
+    const activeShape = ref<ActiveShape | null>(
+        voicingSeparator > 0 && voicingNumber > 0
+            ? { chord: voicingParam.slice(0, voicingSeparator), index: voicingNumber - 1 }
+            : null
     );
     const chordSize = ref<ChordSize>(params.chordSize === "sevenths" ? "sevenths" : "triads");
     const noteNames = ref<string>(params.noteNames === "degrees" ? "degrees" : "notes");
@@ -159,6 +173,14 @@ export function useAppState() {
         if (value.length) params.chord = value.join(",");
         else delete params.chord;
     });
+    watch(activeShape, (value) => {
+        // useUrlSearchParams ignores changes until the tick after it writes, and the shape is
+        // usually cleared by a chord change that has just written the URL
+        nextTick(() => {
+            if (value) params.voicing = `${value.chord}:${value.index + 1}`;
+            else delete params.voicing;
+        });
+    });
     watch(
         tuning,
         (activeTuning) => {
@@ -255,6 +277,7 @@ export function useAppState() {
     return {
         selectedChords: chords,
         chordSize,
+        activeShape,
         canEditSelectedTuning,
         accidentalPreference,
         closeCustomTuningEditor,

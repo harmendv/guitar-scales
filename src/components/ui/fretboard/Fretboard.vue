@@ -24,6 +24,8 @@ const props = withDefaults(
         showRest: boolean | string;
         rootPitchClass: number | null;
         chordTones: ChordTones;
+        // Strings left out of a chord shape, low to high; marked × at the nut
+        mutedStrings?: boolean[];
     }>(),
     {
         strings: () => [
@@ -46,6 +48,7 @@ const props = withDefaults(
         showRest: false,
         rootPitchClass: null,
         chordTones: () => ({}),
+        mutedStrings: () => [],
     }
 );
 
@@ -59,6 +62,11 @@ const reversedStrings = computed<GuitarString[]>(() => {
 const reversedShapeFretsByString = computed<number[][]>(() =>
     Array.from(props.shapeFretsByString).reverse()
 );
+
+const reversedMutedStrings = computed<boolean[]>(() => {
+    const muted = props.strings.map((_, index) => props.mutedStrings[index] ?? false);
+    return muted.reverse();
+});
 
 // --fret-min is 36px on phones and 40px from sm up (set on the wrapper below).
 const fretColumns = computed(
@@ -142,6 +150,7 @@ watch(
                         :highlight="scaleNotes"
                         :shape-frets="reversedShapeFretsByString[index] || []"
                         :shape-active="shapeActive"
+                        :muted="reversedMutedStrings[index]"
                         :view-mode="viewMode"
                         :position-start-fret="positionStartFret"
                         :position-span="positionSpan"

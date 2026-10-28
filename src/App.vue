@@ -7,6 +7,7 @@ import { HarmenDevLogo } from "@/components/ui/harmen-dev-logo";
 import { Logo } from "@/components/ui/logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import ChordPanel from "@/components/app/ChordPanel.vue";
+import ChordShapes from "@/components/app/ChordShapes.vue";
 import PickerBar from "@/components/app/PickerBar.vue";
 import ScaleControls from "@/components/app/ScaleControls.vue";
 import TuningControls from "@/components/app/TuningControls.vue";
@@ -43,14 +44,19 @@ const {
     viewMode,
     selectedChords,
     chordSize,
+    activeShape,
 } = useAppState();
 
 const {
     accidentalPreferenceOptions,
     activePosition,
+    chordShapes,
+    neckShape,
+    positionLabel,
+    selectedChordNames,
+    selectShape,
     borrowedChords,
     chordColors,
-    activeThreeNpsShape,
     chordLegend,
     chordTones,
     chords,
@@ -73,7 +79,6 @@ const {
     selectPosition,
     setPositionStyle,
     shapeNotesPerString,
-    show3nps,
     subheading,
     toggleChord,
 } = useFretboardState({
@@ -91,6 +96,7 @@ const {
     threeNpsShapeIndex,
     tuning,
     viewMode,
+    activeShape,
 });
 
 const hasOutsideTones = computed(() => Object.values(chordTones.value).some((tone) => tone.outside));
@@ -181,9 +187,10 @@ const hasOutsideTones = computed(() => Object.values(chordTones.value).some((ton
                 :strings="tuning.data"
                 :scale-notes="scaleNotes"
                 :frets="fretCount"
-                :shape-active="show3nps"
-                :shape-frets-by-string="activeThreeNpsShape"
-                :view-mode="viewMode"
+                :shape-active="neckShape.active"
+                :shape-frets-by-string="neckShape.fretsByString"
+                :muted-strings="neckShape.mutedStrings"
+                :view-mode="neckShape.viewMode"
                 :position-start-fret="safePositionStartFret"
                 :position-span="safePositionSpan"
                 :note-preference="resolvedAccidentalPreference"
@@ -236,6 +243,18 @@ const hasOutsideTones = computed(() => Object.values(chordTones.value).some((ton
                 </div>
             </div>
         </div>
+
+        <!-- Under the neck, so it doesn't move when the strip comes and goes, and a picked shape
+             shows right above it -->
+        <ChordShapes
+            v-if="selectedChords.length"
+            :shapes="chordShapes"
+            :active="activeShape"
+            :strings="tuning.data"
+            :chord-names="selectedChordNames"
+            :position="positionLabel"
+            @select="selectShape"
+        />
 
         <!-- Phones: tuning sits under the neck so the chords and neck stay on top -->
         <section class="sm:hidden">

@@ -33,23 +33,18 @@ const groups = computed(() => ({
     secondary: props.secondaryChords,
     borrowed: props.borrowedChords,
 }));
-// Each tab counts its selected chords, so a selection on another tab isn't forgotten
-const groupOptions = computed(() => tabOptions((label, selected) => (selected ? `${label} · ${selected}` : label)));
-// Phones have no room for the count next to Triads/7ths, so a dot marks a tab with selections
-const compactGroupOptions = computed(() => tabOptions((label, selected) => (selected ? `${label} •` : label)));
+// Each tab's badge counts its selected chords, so a selection on another tab isn't forgotten
 const GROUP_LABELS = [
     { label: "In key", value: "diatonic" },
     { label: "Secondary", value: "secondary" },
     { label: "Borrowed", value: "borrowed" },
 ] as const;
-function tabOptions(format: (label: string, selected: number) => string) {
-    return GROUP_LABELS.filter((option) => groups.value[option.value].length > 0).map((option) => {
-        const selected = groups.value[option.value].filter((chord) =>
-            props.selectedChords.includes(chord.id)
-        ).length;
-        return { label: format(option.label, selected), value: option.value };
-    });
-}
+const groupOptions = computed(() =>
+    GROUP_LABELS.filter((option) => groups.value[option.value].length > 0).map((option) => ({
+        ...option,
+        badge: groups.value[option.value].filter((chord) => props.selectedChords.includes(chord.id)).length,
+    }))
+);
 const descriptions: Record<ChordGroup, string> = {
     diatonic: "Select chords to compare their tones on the neck",
     secondary: "Dominants that lead into the chords of the key",
@@ -76,7 +71,7 @@ const edgeFade = useEdgeFade(row);
                         v-if="groupOptions.length > 1"
                         v-model="group"
                         :options="groupOptions"
-                        class="p-0.5 [&_button]:h-6 [&_button]:px-2.5 [&_button]:text-[13px]"
+                        class="gap-2 p-0.5 [&_button]:h-6 [&_button]:px-2.5 [&_button]:text-[13px]"
                     />
                     <Segmented
                         v-model="chordSize"
@@ -97,10 +92,10 @@ const edgeFade = useEdgeFade(row);
                 class="shrink-0 [&_button]:px-2.5 [&_button]:text-[13px]"
             />
             <Segmented
-                v-if="compactGroupOptions.length > 1"
+                v-if="groupOptions.length > 1"
                 v-model="group"
-                :options="compactGroupOptions"
-                class="flex min-w-0 flex-1 [&_button]:flex-1 [&_button]:px-1.5 [&_button]:text-[13px]"
+                :options="groupOptions"
+                class="flex min-w-0 flex-1 gap-2 [&_button]:flex-1 [&_button]:px-1.5 [&_button]:text-[13px]"
             />
         </div>
         <!-- Phones: one swipeable row running edge to edge, padded so the play ripple isn't

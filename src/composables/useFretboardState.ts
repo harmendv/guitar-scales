@@ -22,10 +22,11 @@ import {
     spellByLetter,
     type DisplayChord,
 } from "@/lib/harmony";
+import { getVoicings } from "@/lib/voicings";
 import { use3nps } from "@/composables/use3nps";
 import { playSequence } from "@/lib/audio";
 import { usePositionView } from "@/composables/usePositionView";
-import type { FretboardViewMode } from "@/composables/useAppState";
+import type { ActiveShape, FretboardViewMode } from "@/composables/useAppState";
 import type { Tuning } from "@/lib/tunings";
 
 export type PositionStyle = "box" | "3nps";
@@ -47,6 +48,7 @@ export function useFretboardState(input: {
     threeNpsShapeIndex: Ref<number>;
     tuning: ComputedRef<Tuning>;
     viewMode: Ref<FretboardViewMode>;
+    activeShape: Ref<ActiveShape | null>;
 }) {
     const fretCount = 22;
     const noteNamesOptions = [
@@ -206,12 +208,73 @@ export function useFretboardState(input: {
             .filter((chord) => input.selectedChords.value.includes(chord.id))
             .map((chord) => ({ chord, color: colorOf(chord) }))
     );
+    const selectedChordNames = computed(() =>
+        selectedChordList.value.map(({ chord }) => `${formatNoteLabel(chord.note)}${chord.chord}`)
+    );
+    // Every selected chord's shapes in one list up the neck, so shapes of different chords that lie
+    // close together sit side by side; picking one shows just that shape on the neck
+    const chordShapes = computed(() =>
+        selectedChordList.value
+            .flatMap(({ chord, color }) =>
+                getVoicings(chord.tones, input.tuning.value.data, fretCount).map((voicing, index) => ({
+                    chord,
+                    color,
+                    voicing,
+                    index,
+                }))
+            )
+            .sort((left, right) => left.voicing.baseFret - right.voicing.baseFret)
+    );
+    const activeChordShape = computed(() => {
+        const active = input.activeShape.value;
+        if (!active) return null;
+        return chordShapes.value.find((shape) => shape.chord.id === active.chord && shape.index === active.index) ?? null;
+    });
+    // Deselecting the shape's chord, or a key or tuning that gives it other shapes, clears the pick
+    watch(
+        () => {
+            const active = input.activeShape.value;
+            if (!active) return null;
+            const shapes = chordShapes.value.filter((shape) => shape.chord.id === active.chord);
+            return `${active.chord}|${shapes.map((shape) => shape.voicing.frets.join(",")).join(";")}`;
+        },
+        (now, previous) => {
+            if (!now || !previous || now === previous) return;
+            if (now.split("|")[0] === previous.split("|")[0]) input.activeShape.value = null;
+        }
+    );
+    // A picked shape takes over the neck from the position and 3NPS views
+    const neckShape = computed(() => {
+        const voicing = activeChordShape.value?.voicing;
+        if (!voicing) {
+            return {
+                active: show3nps.value,
+                fretsByString: activeThreeNpsShape.value,
+                viewMode: input.viewMode.value,
+                mutedStrings: [] as boolean[],
+            };
+        }
+        return {
+            active: true,
+            fretsByString: voicing.frets.map((fret) => (fret == null ? [] : [fret])),
+            viewMode: "full" as FretboardViewMode,
+            mutedStrings: voicing.frets.map((fret) => fret == null),
+        };
+    });
+    function selectShape(shape: ActiveShape | null) {
+        input.activeShape.value = shape;
+    }
+    // With a shape picked, the neck shows only its chord, in that chord's colour
+    const neckChordList = computed(() => {
+        const active = activeChordShape.value;
+        return active ? selectedChordList.value.filter(({ chord }) => chord.id === active.chord.id) : selectedChordList.value;
+    });
     const modeRootNote = computed(() => scaleNotes.value[0]?.note ?? input.note.value);
     const rootPitchClass = computed(() => scaleNotes.value[0]?.pitchClass ?? null);
     const chordTones = computed<ChordTones>(() => {
         const tones: ChordTones = {};
         const inScale = new Set(scaleNotes.value.map((scaleNote) => scaleNote.pitchClass));
-        for (const { chord, color } of selectedChordList.value) {
+        for (const { chord, color } of neckChordList.value) {
             const chordRoot = getPitchClass(chord.note);
             for (const tone of chord.tones) {
                 const entry = (tones[String(tone.pitchClass)] ??= {
@@ -232,7 +295,7 @@ export function useFretboardState(input: {
         return tones;
     });
     const chordLegend = computed(() =>
-        selectedChordList.value.map(({ chord, color }) => ({
+        neckChordList.value.map(({ chord, color }) => ({
             label: `${formatNoteLabel(chord.note)}${chord.chord}`,
             color,
         }))
@@ -297,6 +360,39 @@ export function useFretboardState(input: {
     const activeThreeNpsShape = computed<number[][]>(
         () => threeNpsShapes.value[input.threeNpsShapeIndex.value] ?? []
     );
+    // The frets of the chosen box or 3NPS position, or null on the full neck
+    const positionFretRange = computed<[number, number] | null>(() => {
+        if (input.viewMode.value === "position") {
+            return [safePositionStartFret.value, safePositionStartFret.value + safePositionSpan.value - 1];
+        }
+        if (input.viewMode.value === "3nps") {
+            const frets = activeThreeNpsShape.value.flat();
+            return frets.length ? [Math.min(...frets), Math.max(...frets)] : null;
+        }
+        return null;
+    });
+    // How the shapes strip names the position it's limited to
+    const positionLabel = computed(() => {
+        if (!positionFretRange.value) return null;
+        const number = input.threeNpsShapeIndex.value + 1;
+        return input.viewMode.value === "3nps" ? `3NPS position ${number}` : `box ${number}`;
+    });
+    // Inside a position, only the shapes the hand can play without moving: a fret's stretch either
+    // side of it still counts, and open strings do when that reaches the nut
+    const SHAPE_STRETCH = 1;
+    const visibleChordShapes = computed(() => {
+        const range = positionFretRange.value;
+        if (!range) return chordShapes.value;
+        const first = range[0] - SHAPE_STRETCH;
+        const last = range[1] + SHAPE_STRETCH;
+        return chordShapes.value.filter(({ voicing }) =>
+            voicing.frets.every((fret) => fret == null || (fret === 0 ? first <= 1 : fret >= first && fret <= last))
+        );
+    });
+    // Choosing another position shows that position, not the shape that was on the neck
+    watch([() => input.viewMode.value, () => input.threeNpsShapeIndex.value], () => {
+        input.activeShape.value = null;
+    });
     const modeName = computed(
         () => modeOptions.value[input.mode.value - 1]?.label.split(" / ")[0] ?? ""
     );
@@ -375,13 +471,18 @@ export function useFretboardState(input: {
     }
 
     return {
+        activeChordShape,
+        positionLabel,
+        selectedChordNames,
         borrowedChords,
+        chordShapes: visibleChordShapes,
+        neckShape,
+        selectShape,
         chordColors,
         chordLegend,
         chordTones,
         accidentalPreferenceOptions,
         activePosition,
-        activeThreeNpsShape,
         chords,
         fretCount,
         heading,
@@ -402,7 +503,6 @@ export function useFretboardState(input: {
         selectPosition,
         setPositionStyle,
         shapeNotesPerString,
-        show3nps,
         subheading,
         toggleChord,
     };

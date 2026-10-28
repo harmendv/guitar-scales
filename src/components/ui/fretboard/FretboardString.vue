@@ -31,6 +31,8 @@ const props = withDefaults(
         rootPitchClass?: number | null;
         chordTones?: ChordTones;
         thickness?: number;
+        // Left out of the chord shape on show: × at the nut instead of the open note
+        muted?: boolean;
     }>(),
     {
         frets: 19,
@@ -46,6 +48,7 @@ const props = withDefaults(
         rootPitchClass: null,
         chordTones: () => ({}),
         thickness: 1,
+        muted: false,
     }
 );
 
@@ -165,7 +168,13 @@ function play(index: number) {
                 :class="['size-[26px] rounded-full', rippleClasses[note.kind]]"
                 :style="note.rippleColor ? { background: note.rippleColor } : undefined"
             />
+            <span
+                v-if="muted && index === 0"
+                class="relative z-10 text-lg leading-none font-semibold text-white/85"
+                aria-label="Muted string"
+            >×</span>
             <button
+                v-else
                 type="button"
                 :tabindex="note.visible ? 0 : -1"
                 :aria-label="`${note.name}${note.octave}`"
