@@ -8,6 +8,8 @@
         <meta name="theme-color" content="#f53003" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <title>Guitar Scales</title>
+        <!-- Apply the theme before first paint, so dark devices don't flash white -->
+        <script>try{var t=localStorage.getItem("theme");if(t!=="dark"&&t!=="light")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
         <!-- Fonts used above the fold -->
         <link rel="preload" href="/fonts/ibm-plex-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
         <link rel="preload" href="/fonts/instrument-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
