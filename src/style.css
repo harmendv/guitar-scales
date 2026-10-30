@@ -153,11 +153,10 @@
     --board-edge: rgba(255, 240, 220, 0.08);
 }
 
-/* The theme lives on <body>, but the page scrollbar follows <html> */
 html {
     color-scheme: light;
 }
-html:has(body[data-theme="dark"]) {
+html[data-theme="dark"] {
     color-scheme: dark;
     scrollbar-color: #3a3632 #141312;
 }

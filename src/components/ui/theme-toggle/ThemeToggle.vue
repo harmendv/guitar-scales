@@ -18,12 +18,12 @@ const theme = ref<string>(
 );
 
 watch(theme, (v) => {
-    document.body.setAttribute("data-theme", v);
+    document.documentElement.setAttribute("data-theme", v);
     localStorage.setItem("theme", v);
 });
 
 onMounted(() => {
-    document.body.setAttribute("data-theme", theme.value);
+    document.documentElement.setAttribute("data-theme", theme.value);
 });
 </script>
 
