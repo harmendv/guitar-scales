@@ -68,14 +68,11 @@ const groupOptions = computed(() =>
         matchingProgressions.value.some((entry) => entry.kind === option.value)
     )
 );
-// The playing or paused progression leads every other tab, so its controls never go out of sight
-// when another tab is picked; in its own tab it keeps its place
-const visibleProgressions = computed(() => {
-    const activeId = playingId.value ?? pausedId.value;
-    const active = props.progressions.find((entry) => entry.progression.id === activeId);
-    const inTab = matchingProgressions.value.filter((entry) => entry.kind === group.value);
-    return active && active.kind !== group.value ? [active, ...inTab] : inTab;
-});
+const visibleProgressions = computed(() =>
+    matchingProgressions.value.filter((entry) => entry.kind === group.value)
+);
+// While one plays or is paused the tabs stay put, so its card and controls never go out of sight
+const tabsLocked = computed(() => playingId.value != null || pausedId.value != null);
 // A key without progressions of this kind falls back to the first tab it has
 watch(
     groupOptions,
@@ -232,6 +229,7 @@ const controlsFade = useEdgeFade(controls);
                         v-if="groupOptions.length > 1 && matchingProgressions.length"
                         v-model="group"
                         :options="groupOptions"
+                        :disabled="tabsLocked"
                         class="gap-2 p-0.5 [&_button]:h-6 [&_button]:px-2.5 [&_button]:text-[13px]"
                     />
                     <Segmented
@@ -265,6 +263,7 @@ const controlsFade = useEdgeFade(controls);
                     v-if="groupOptions.length > 1 && matchingProgressions.length"
                     v-model="group"
                     :options="groupOptions"
+                    :disabled="tabsLocked"
                     class="flex flex-1 shrink-0 [&_button]:flex-1 [&_button]:px-1.5 [&_button]:text-[13px]"
                 />
             </div>

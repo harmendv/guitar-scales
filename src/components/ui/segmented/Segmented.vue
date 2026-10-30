@@ -5,6 +5,8 @@ defineProps<{
     // `badge` puts a count on the option's top-right corner, left off when it's 0
     options: { label: string; value: T; badge?: number }[];
     class?: string;
+    // Shown but not switchable, the current option still marked
+    disabled?: boolean;
 }>();
 
 const model = defineModel<T>();
@@ -21,11 +23,12 @@ const model = defineModel<T>();
             type="button"
             role="radio"
             :aria-checked="model === option.value"
+            :disabled="disabled"
             :class="[
                 'relative h-8 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 model === option.value
                     ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
+                    : 'text-muted-foreground enabled:hover:text-foreground disabled:opacity-50',
             ]"
             @click="model = option.value"
         >
