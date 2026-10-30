@@ -9,6 +9,10 @@ defineProps<{
     chord: string;
     // The chord's colour on the neck; fills the card while it's selected
     color: string;
+    // Selected, but off the neck for now (a progression has it): a ring in its colour, not a fill
+    outlined?: boolean;
+    // Whether it's selected, which isn't always whether it's lit: a progression can light it alone
+    selected: boolean;
     note: string;
     numeral: string;
     tones: string[];
@@ -32,12 +36,18 @@ function play() {
     <div class="relative">
         <button
             type="button"
-            :aria-pressed="active"
+            :aria-pressed="selected"
             :class="[
                 'flex size-full flex-col items-start rounded-xl border py-3 pr-10 pl-4 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 active ? 'text-[#1a1918]' : 'border-border bg-card hover:border-foreground/30',
             ]"
-            :style="active ? { background: color, borderColor: color } : undefined"
+            :style="
+                active
+                    ? { background: color, borderColor: color }
+                    : outlined
+                      ? { borderColor: color, boxShadow: `inset 0 0 0 1px ${color}` }
+                      : undefined
+            "
             @click="$emit('click')"
         >
             <span class="tabular-nums text-[11px] opacity-70">{{ numeral }}</span>

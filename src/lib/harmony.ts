@@ -202,7 +202,7 @@ export function buildDiatonicChords(
 }
 
 // "", "m", "dim" or "aug" from the chord's third and fifth; null for sus and fifthless chords.
-function triadQuality(chord: DisplayChord): string | null {
+export function triadQuality(chord: DisplayChord): string | null {
     const root = chord.tones[0]?.pitchClass ?? 0;
     const semitones = new Set(chord.tones.map((tone) => (tone.pitchClass - root + 12) % 12));
     if (semitones.has(4) && semitones.has(7)) return "";

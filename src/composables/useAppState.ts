@@ -16,6 +16,11 @@ export interface ActiveShape {
     chord: string;
     index: number;
 }
+// The chord of a playing progression: the progression's id and the chord's place in it
+export interface ProgressionStep {
+    id: string;
+    index: number;
+}
 
 export function useAppState() {
     const params = useUrlSearchParams("history");
@@ -48,6 +53,9 @@ export function useAppState() {
             .map((value) => value.trim())
             .filter(Boolean)
     );
+    // The chord of the progression that's playing, on the neck instead of the selected chords.
+    // Playing isn't something to share, so it isn't kept in the URL.
+    const progressionStep = ref<ProgressionStep | null>(null);
     // The chord shape shown on the neck: a selected chord's id and its shape, 1-based in the URL
     // (`voicing=4:2` is the second shape of IV); none shows every chord tone
     const voicingParam = String(params.voicing ?? "");
@@ -278,6 +286,7 @@ export function useAppState() {
         selectedChords: chords,
         chordSize,
         activeShape,
+        progressionStep,
         canEditSelectedTuning,
         accidentalPreference,
         closeCustomTuningEditor,

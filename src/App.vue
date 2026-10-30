@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { useCollapsedSection } from "@/composables/useCollapsedSection";
 import { Fretboard } from "@/components/ui/fretboard";
 import DialogTuningEditor from "@/components/tuning-editor/Dialog.TuningEditor.vue";
 import AppHeader from "@/components/app/AppHeader.vue";
@@ -8,6 +10,7 @@ import { Logo } from "@/components/ui/logo";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import ChordPanel from "@/components/app/ChordPanel.vue";
 import ChordShapes from "@/components/app/ChordShapes.vue";
+import ProgressionPanel from "@/components/app/ProgressionPanel.vue";
 import PickerBar from "@/components/app/PickerBar.vue";
 import ScaleControls from "@/components/app/ScaleControls.vue";
 import TuningControls from "@/components/app/TuningControls.vue";
@@ -45,6 +48,7 @@ const {
     selectedChords,
     chordSize,
     activeShape,
+    progressionStep,
 } = useAppState();
 
 const {
@@ -53,7 +57,12 @@ const {
     chordShapes,
     neckShape,
     positionLabel,
+    progressionChord,
+    progressions,
+    showProgressionStep,
+    progressionFilter,
     selectedChordNames,
+    showsEveryChord,
     selectShape,
     borrowedChords,
     chordColors,
@@ -97,7 +106,11 @@ const {
     tuning,
     viewMode,
     activeShape,
+    progressionStep,
 });
+
+const fretboardCollapsed = useCollapsedSection("fretboard");
+const tuningCollapsed = useCollapsedSection("tuning");
 
 const hasOutsideTones = computed(() => Object.values(chordTones.value).some((tone) => tone.outside));
 </script>
@@ -166,100 +179,110 @@ const hasOutsideTones = computed(() => Object.values(chordTones.value).some((ton
             :secondary-chords="secondaryChords"
             :borrowed-chords="borrowedChords"
             :chord-colors="chordColors"
+            :progression-chord="progressionChord && { id: progressionChord.chord.id, color: progressionChord.color }"
             @toggle="toggleChord"
         />
 
-        <ViewModeControls
-            v-model:note-names="noteNames"
-            v-model:note-visibility="noteVisibility"
-            :active-position="activePosition"
-            :note-names-options="noteNamesOptions"
-            :note-visibility-options="noteVisibilityOptions"
-            :position-count="positionCount"
-            :position-style="positionStyle"
-            :shape-notes-per-string="shapeNotesPerString"
-            @select-position="selectPosition"
-            @set-position-style="setPositionStyle"
-        />
+        <section>
+            <div :class="['flex h-7 items-center', !fretboardCollapsed && 'mb-3']">
+                <SectionHeading v-model:collapsed="fretboardCollapsed" title="Fretboard" />
+            </div>
+            <div v-if="!fretboardCollapsed" class="flex flex-col gap-6">
+                <ViewModeControls
+                    v-model:note-names="noteNames"
+                    v-model:note-visibility="noteVisibility"
+                    :active-position="activePosition"
+                    :note-names-options="noteNamesOptions"
+                    :note-visibility-options="noteVisibilityOptions"
+                    :position-count="positionCount"
+                    :position-style="positionStyle"
+                    :shape-notes-per-string="shapeNotesPerString"
+                    @select-position="selectPosition"
+                    @set-position-style="setPositionStyle"
+                />
 
-        <div>
-            <Fretboard
-                :strings="tuning.data"
-                :scale-notes="scaleNotes"
-                :frets="fretCount"
-                :shape-active="neckShape.active"
-                :shape-frets-by-string="neckShape.fretsByString"
-                :muted-strings="neckShape.mutedStrings"
-                :view-mode="neckShape.viewMode"
-                :position-start-fret="safePositionStartFret"
-                :position-span="safePositionSpan"
-                :note-preference="resolvedAccidentalPreference"
-                :chord-tones="chordTones"
-                :show-degrees="noteNames === 'degrees'"
-                :root-pitch-class="rootPitchClass"
-                :show-rest="noteVisibility === 'all'"
-            />
-            <div class="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-                <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-                    <!-- With chords selected the legend names each one in its colour -->
-                    <template v-if="chordLegend.length">
-                        <span
-                            v-for="item in chordLegend"
-                            :key="item.label"
-                            class="flex items-center gap-1.5 font-medium text-foreground"
-                        >
-                            <span class="size-2.5 rounded-full" :style="{ background: item.color }"></span>{{ item.label }}
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="size-2.5 rounded-full ring-[1.5px] ring-foreground/60 ring-offset-[1.5px] ring-offset-background"></span>Chord root
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="size-2.5 rounded-full bg-[color-mix(in_srgb,var(--tone-scale)_35%,var(--wood))]"></span>Other scale tone
-                        </span>
-                        <span v-if="hasOutsideTones" class="flex items-center gap-1.5">
-                            <span class="outside-tone size-2.5 rounded-full bg-[var(--chord-8)] [outline-offset:-2px]"></span>Outside the key
-                        </span>
-                    </template>
-                    <template v-else>
-                        <span class="flex items-center gap-1.5">
-                            <span class="size-2.5 rounded-full bg-tone-root"></span>Root
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="size-2.5 rounded-full border border-foreground/15 bg-tone-scale"></span>Scale tone
-                        </span>
-                    </template>
-                    <span>Tap a note to hear it</span>
-                </div>
-                <!-- Phones get the bordered version in its own section below -->
-                <div class="hidden sm:block">
-                    <TuningControls
-                        v-model:selected-tuning-id="selectedTuningId"
-                        :can-edit-selected-tuning="canEditSelectedTuning"
-                        :tuning="tuning"
-                        :tuning-options="tuningOptions"
-                        @create="openCreateCustomTuning"
-                        @edit="openEditCustomTuning"
+                <div>
+                    <Fretboard
+                        :strings="tuning.data"
+                        :scale-notes="scaleNotes"
+                        :frets="fretCount"
+                        :shape-active="neckShape.active"
+                        :shape-frets-by-string="neckShape.fretsByString"
+                        :muted-strings="neckShape.mutedStrings"
+                        :view-mode="neckShape.viewMode"
+                        :position-start-fret="safePositionStartFret"
+                        :position-span="safePositionSpan"
+                        :note-preference="resolvedAccidentalPreference"
+                        :chord-tones="chordTones"
+                        :show-degrees="noteNames === 'degrees'"
+                        :root-pitch-class="rootPitchClass"
+                        :show-rest="noteVisibility === 'all'"
                     />
+                    <div class="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                        <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
+                            <!-- With chords selected the legend names each one in its colour -->
+                            <template v-if="chordLegend.length">
+                                <span
+                                    v-for="item in chordLegend"
+                                    :key="item.label"
+                                    class="flex items-center gap-1.5 font-medium text-foreground"
+                                >
+                                    <span class="size-2.5 rounded-full" :style="{ background: item.color }"></span>{{ item.label }}
+                                </span>
+                                <span class="flex items-center gap-1.5">
+                                    <span class="size-2.5 rounded-full ring-[1.5px] ring-foreground/60 ring-offset-[1.5px] ring-offset-background"></span>Chord root
+                                </span>
+                                <span class="flex items-center gap-1.5">
+                                    <span class="size-2.5 rounded-full bg-[color-mix(in_srgb,var(--tone-scale)_35%,var(--wood))]"></span>Other scale tone
+                                </span>
+                                <span v-if="hasOutsideTones" class="flex items-center gap-1.5">
+                                    <span class="outside-tone size-2.5 rounded-full bg-[var(--chord-8)] [outline-offset:-2px]"></span>Outside the key
+                                </span>
+                            </template>
+                            <template v-else>
+                                <span class="flex items-center gap-1.5">
+                                    <span class="size-2.5 rounded-full bg-tone-root"></span>Root
+                                </span>
+                                <span class="flex items-center gap-1.5">
+                                    <span class="size-2.5 rounded-full border border-foreground/15 bg-tone-scale"></span>Scale tone
+                                </span>
+                            </template>
+                            <span>Tap a note to hear it</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Under the neck, so it doesn't move when the strip comes and goes, and a picked shape
-             shows right above it -->
+        <!-- Right under the neck, so a looping progression and the neck stay on screen together -->
+        <ProgressionPanel
+            v-if="progressions.length"
+            :progressions="progressions"
+            :step="progressionStep"
+            :filter="progressionFilter"
+            @show="showProgressionStep"
+            @toggle="toggleChord"
+        />
+
+        <!-- Under the neck and the progressions; with no chord selected it offers every chord in the key -->
         <ChordShapes
-            v-if="selectedChords.length"
             :shapes="chordShapes"
             :active="activeShape"
             :strings="tuning.data"
             :chord-names="selectedChordNames"
             :position="positionLabel"
+            :every-chord="showsEveryChord"
             @select="selectShape"
         />
 
-        <!-- Phones: tuning sits under the neck so the chords and neck stay on top -->
-        <section class="sm:hidden">
-            <h2 class="mb-3 font-display text-lg font-semibold tracking-tight">Tuning</h2>
+        <!-- Under the neck and shapes, so the chords and neck stay on top -->
+        <section>
+            <div :class="['flex h-7 items-center', !tuningCollapsed && 'mb-3']">
+                <SectionHeading v-model:collapsed="tuningCollapsed" title="Tuning" />
+            </div>
             <TuningControls
+                v-if="!tuningCollapsed"
+                class="sm:max-w-md"
                 field
                 v-model:selected-tuning-id="selectedTuningId"
                 :can-edit-selected-tuning="canEditSelectedTuning"
