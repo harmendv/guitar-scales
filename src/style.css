@@ -205,6 +205,33 @@ html:has(body[data-theme="dark"]) {
     outline-offset: -4px;
 }
 
+/* A playing progression's chord: its notes grow, popping a little past that as the chord comes in */
+.tone-active {
+    scale: 1.2;
+    animation: tone-pop 260ms ease-out;
+}
+@keyframes tone-pop {
+    0% {
+        scale: 1;
+    }
+    50% {
+        scale: 1.4;
+    }
+    100% {
+        scale: 1.2;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tone-active {
+        animation: none;
+    }
+}
+
+/* The other notes while a progression plays */
+.tone-resting {
+    opacity: var(--tone-resting-opacity, 0.7);
+}
+
 /* Horizontal scrollers that should still swipe but show no bar */
 @utility no-scrollbar {
     scrollbar-width: none;

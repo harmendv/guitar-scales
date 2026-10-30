@@ -7,10 +7,19 @@ export interface Chord {
 
 // Fretboard view of the selected chords, keyed by pitch class: one colour per chord the note is
 // in, the colour of the chord it's the root of (if any), the interval to label it with, the
-// chord's spelling of the note, and whether it falls outside the key.
+// chord's spelling of the note, and whether it falls outside the key. While a progression plays,
+// the tones of the chord it's on are marked active; one with no colours
+// is only that, a ring around a plain note.
 export type ChordTones = Record<
     string,
-    { colors: string[]; rootColor?: string; interval?: string; note?: string; outside?: boolean }
+    {
+        colors: string[];
+        rootColor?: string;
+        interval?: string;
+        note?: string;
+        outside?: boolean;
+        active?: boolean;
+    }
 >;
 
 // Each degree keeps its own colour, so adding or removing a chord never recolours the others.

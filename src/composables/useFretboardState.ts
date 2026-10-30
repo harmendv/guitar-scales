@@ -214,9 +214,13 @@ export function useFretboardState(input: {
         },
         { immediate: true }
     );
+    const playingProgression = computed(() => {
+        const step = input.progressionStep.value;
+        return (step && progressions.value.find((entry) => entry.progression.id === step.id)) || null;
+    });
     const progressionChord = computed(() => {
         const step = input.progressionStep.value;
-        const active = step && progressions.value.find((entry) => entry.progression.id === step.id);
+        const active = playingProgression.value;
         if (!step || !active) return null;
         const index = step.index % active.chords.length;
         return { chord: active.chords[index], color: active.colors[index] };
@@ -342,35 +346,57 @@ export function useFretboardState(input: {
     });
     const modeRootNote = computed(() => scaleNotes.value[0]?.note ?? input.note.value);
     const rootPitchClass = computed(() => scaleNotes.value[0]?.pitchClass ?? null);
+    // While a progression plays it changes no colours: the neck keeps the selected chords' fills (or
+    // the plain scale) and only rings the chord it's on
+    const progressionFills = computed(() =>
+        progressionChord.value && !activeChordShape.value ? selectedChordList.value : null
+    );
     const chordTones = computed<ChordTones>(() => {
         const tones: ChordTones = {};
         const inScale = new Set(scaleNotes.value.map((scaleNote) => scaleNote.pitchClass));
-        for (const { chord, color } of neckChordList.value) {
+        const entryFor = (tone: DisplayChord["tones"][number]) =>
+            (tones[String(tone.pitchClass)] ??= {
+                colors: [],
+                note: tone.note,
+                outside: !inScale.has(tone.pitchClass),
+            });
+        const fills = progressionFills.value;
+        for (const { chord, color } of fills ?? neckChordList.value) {
             const chordRoot = getPitchClass(chord.note);
             for (const tone of chord.tones) {
-                const entry = (tones[String(tone.pitchClass)] ??= {
-                    colors: [],
-                    note: tone.note,
-                    outside: !inScale.has(tone.pitchClass),
-                });
-                entry.colors.push(color);
-                // A note that's some chord's root is labelled as that root (1)
+                const entry = entryFor(tone);
+                if (!entry.colors.includes(color)) entry.colors.push(color);
+                // A note that's some chord's root is labelled as that root (1). While a progression
+                // plays the rings are the playing chord's, so roots go unringed.
                 if (tone.pitchClass === chordRoot) {
-                    entry.rootColor ??= color;
+                    if (!fills) entry.rootColor ??= color;
                     entry.interval = tone.interval;
                 } else if (!entry.rootColor) {
                     entry.interval ??= tone.interval;
                 }
             }
         }
+        const current = fills && progressionChord.value?.chord;
+        if (current) {
+            for (const tone of current.tones) entryFor(tone).active = true;
+        }
         return tones;
     });
-    const chordLegend = computed(() =>
-        neckChordList.value.map(({ chord, color }) => ({
+    // The chords on the neck, and while a progression plays the chord it's on, marked active (only
+    // ringed if it isn't one of them)
+    const chordLegend = computed(() => {
+        const list = progressionFills.value ?? neckChordList.value;
+        const current = progressionFills.value ? progressionChord.value?.chord : undefined;
+        const items = list.map(({ chord, color }) => ({
             label: `${formatNoteLabel(chord.note)}${chord.chord}`,
-            color,
-        }))
-    );
+            color: color as string | undefined,
+            active: chord.id === current?.id,
+        }));
+        if (current && !items.some((item) => item.active)) {
+            items.push({ label: `${formatNoteLabel(current.note)}${current.chord}`, color: undefined, active: true });
+        }
+        return items;
+    });
     // Numbered positions follow the scale degrees on the lowest string, climbing up from the root.
     const positionSpanFrets = 5;
     const degreeFrets = computed<number[]>(() => {

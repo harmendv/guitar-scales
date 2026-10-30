@@ -280,8 +280,8 @@ const BORROWED_RESOLUTIONS: Record<string, { degree: string; quality?: string }>
 };
 
 // Parallel modes to borrow from, most familiar first, so the same chord is credited to the
-// likeliest source.
-const BORROW_SOURCE_MODES = [6, 2, 5, 3, 4, 1, 7];
+// likeliest source: a minor key's major V comes from the parallel major (Ionian), not Lydian.
+const BORROW_SOURCE_MODES = [6, 2, 5, 3, 1, 4, 7];
 const MAJOR_SCALE_INDEX = scales.findIndex((scale) => scale.slug === "major");
 
 // Chords from the other modes of the major scale on the same tonic (Fm, A♭ and B♭ in C major),

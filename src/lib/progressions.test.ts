@@ -60,7 +60,7 @@ describe("progressions", () => {
         const kinds = (id: string) => key("major", 1, "C").found.find((entry) => entry.progression.id === id)?.kind;
         expect(kinds("pop")).toBe("diatonic");
         expect(kinds("ragtime")).toBe("secondary");
-        expect(kinds("lydian-vamp")).toBe("secondary");
+        expect(kinds("lydian-vamp")).toBe("borrowed");
         expect(kinds("mixolydian-rock")).toBe("borrowed");
     });
 
@@ -68,7 +68,19 @@ describe("progressions", () => {
         const { found } = key("major", 1, "C");
         const ragtime = found.find((entry) => entry.progression.id === "ragtime");
         expect(ragtime?.chords.map(name)).toEqual(["E", "A", "D", "G", "C"]);
-        expect(ragtime?.numerals).toEqual(["III", "VI", "II", "V", "I"]);
+        expect(ragtime?.numerals).toEqual(["V/vi", "V/ii", "V/V", "V", "I"]);
+
+    });
+
+    it("only reads an outside chord as a secondary dominant when it resolves", () => {
+        // C–D never reaches G, so its D is Lydian's II, not V/V
+        const lydian = key("major", 1, "C").found.find((entry) => entry.progression.id === "lydian-vamp");
+        expect(lydian?.numerals).toEqual(["I", "II"]);
+        expect(lydian?.chords[1].source).toBe("Lydian");
+        // In A minor the Dorian vamp's D is Dorian's IV, not the V of G
+        const dorian = key("major", 6, "C").found.find((entry) => entry.progression.id === "dorian-vamp");
+        expect(dorian?.numerals).toEqual(["i", "IV"]);
+        expect(dorian?.chords[1].source).toBe("Dorian");
     });
 
     it("puts a mode's own progressions first", () => {

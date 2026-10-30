@@ -112,6 +112,9 @@ const {
 const fretboardCollapsed = useCollapsedSection("fretboard");
 const tuningCollapsed = useCollapsedSection("tuning");
 
+// Whether any chord fills the neck; a playing progression on its own only rings its chord's notes
+const legendFilled = computed(() => chordLegend.value.some((item) => item.color));
+
 const hasOutsideTones = computed(() => Object.values(chordTones.value).some((tone) => tone.outside));
 </script>
 
@@ -179,7 +182,6 @@ const hasOutsideTones = computed(() => Object.values(chordTones.value).some((ton
             :secondary-chords="secondaryChords"
             :borrowed-chords="borrowedChords"
             :chord-colors="chordColors"
-            :progression-chord="progressionChord && { id: progressionChord.chord.id, color: progressionChord.color }"
             @toggle="toggleChord"
         />
 
@@ -220,14 +222,18 @@ const hasOutsideTones = computed(() => Object.values(chordTones.value).some((ton
                     />
                     <div class="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                         <div class="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted-foreground">
-                            <!-- With chords selected the legend names each one in its colour -->
-                            <template v-if="chordLegend.length">
+                            <!-- With chords selected the legend names each one in its colour; while a
+                                 progression plays, its chords, the one it's on ringed -->
+                            <template v-if="legendFilled">
                                 <span
                                     v-for="item in chordLegend"
                                     :key="item.label"
                                     class="flex items-center gap-1.5 font-medium text-foreground"
                                 >
-                                    <span class="size-2.5 rounded-full" :style="{ background: item.color }"></span>{{ item.label }}
+                                    <span
+                                        :class="['size-2.5 rounded-full', item.active && 'ring-2 ring-foreground ring-offset-2 ring-offset-background']"
+                                        :style="{ background: item.color ?? 'color-mix(in srgb, var(--tone-scale) 35%, var(--wood))' }"
+                                    ></span>{{ item.label }}
                                 </span>
                                 <span class="flex items-center gap-1.5">
                                     <span class="size-2.5 rounded-full ring-[1.5px] ring-foreground/60 ring-offset-[1.5px] ring-offset-background"></span>Chord root
@@ -240,6 +246,13 @@ const hasOutsideTones = computed(() => Object.values(chordTones.value).some((ton
                                 </span>
                             </template>
                             <template v-else>
+                                <span
+                                    v-for="item in chordLegend"
+                                    :key="item.label"
+                                    class="flex items-center gap-1.5 font-medium text-foreground"
+                                >
+                                    <span class="size-2.5 rounded-full bg-tone-scale ring-2 ring-foreground ring-offset-2 ring-offset-background"></span>{{ item.label }}
+                                </span>
                                 <span class="flex items-center gap-1.5">
                                     <span class="size-2.5 rounded-full bg-tone-root"></span>Root
                                 </span>

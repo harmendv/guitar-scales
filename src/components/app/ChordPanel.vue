@@ -17,9 +17,6 @@ const props = defineProps<{
     secondaryChords: DisplayChord[];
     borrowedChords: DisplayChord[];
     chordColors: Record<string, string>;
-    // The chord a progression has on the neck, lit in its colour; selected chords are outlined
-    // meanwhile, being off the neck until it's done
-    progressionChord: { id: string; color: string } | null;
 }>();
 
 defineEmits<{
@@ -117,10 +114,9 @@ const edgeFade = useEdgeFade(row);
                     class="w-[8.5rem] shrink-0 sm:w-auto"
                     v-for="chord in visibleChords"
                     :key="chord.id"
-                    :active="progressionChord ? progressionChord.id === chord.id : selectedChords.includes(chord.id)"
+                    :active="selectedChords.includes(chord.id)"
                     :selected="selectedChords.includes(chord.id)"
-                    :outlined="!!progressionChord && progressionChord.id !== chord.id && selectedChords.includes(chord.id)"
-                    :color="progressionChord?.id === chord.id ? progressionChord.color : chordColors[chord.id]"
+                    :color="chordColors[chord.id]"
                     :note="chord.note"
                     :chord="chord.chord"
                     :numeral="chord.numeral"

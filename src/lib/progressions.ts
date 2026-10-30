@@ -17,7 +17,8 @@ export interface Progression {
 export interface KeyProgression {
     progression: Progression;
     chords: DisplayChord[];
-    // Numerals by degree, so a secondary dominant reads II rather than V/V
+    // Numerals as the chord panel writes them: by degree, and a secondary dominant by the chord it
+    // leads to (V/V), so it's clear where a D major in C comes from
     numerals: string[];
     // How many of its chords come from outside the key
     outside: number;
@@ -71,30 +72,36 @@ function parseStep(step: string): { semitones: number; quality: string } | null 
 }
 
 // The progressions that can be played in a key, from its own chords and, failing that, the ones
-// it can reach outside (secondary dominants, then borrowed chords), as long as at least half its
-// chords are the key's own. Those that stay in the key come first, then those with the fewest
-// outside chords; within each, ones the mode is known for.
+// it can reach outside, as long as at least half its chords are the key's own. An outside chord is
+// read as a secondary dominant only when the next chord is the one it resolves to, a fifth below
+// (E → A → D → G in ragtime); otherwise it's borrowed from a parallel mode, so the D of C–D is
+// Lydian's II rather than a V/V that never reaches G. Those that stay in the key come first, then
+// those with the fewest outside chords; within each, ones the mode is known for.
 export function findProgressions(diatonic: DisplayChord[], outside: DisplayChord[], modeName: string): KeyProgression[] {
     const tonicChord = diatonic[0];
     const tonicPitchClass = tonicChord?.tones[0]?.pitchClass;
     if (tonicChord == null || tonicPitchClass == null) return [];
     const tonicQuality = triadQuality(tonicChord);
     const keyTonic = tonicQuality === "" ? "major" : tonicQuality === "m" ? "minor" : null;
-    const candidates = [...diatonic, ...outside];
+    const secondary = outside.filter((chord) => chord.kind === "secondary");
+    const borrowed = outside.filter((chord) => chord.kind !== "secondary");
     const mode = modeName.toLowerCase();
 
     const found = progressions.flatMap((progression, order) => {
         if (progression.tonic !== keyTonic) return [];
+        const parsed = progression.steps.map(parseStep);
         const chords: DisplayChord[] = [];
-        for (const step of progression.steps) {
-            const parsed = parseStep(step);
-            const chord = parsed
-                ? candidates.find(
-                      (candidate) =>
-                          ((candidate.tones[0]?.pitchClass ?? -1) - tonicPitchClass + 12) % 12 === parsed.semitones &&
-                          triadQuality(candidate) === parsed.quality
-                  )
-                : undefined;
+        for (const [index, step] of parsed.entries()) {
+            if (!step) return [];
+            // It loops, so the last chord resolves to the first
+            const next = parsed[(index + 1) % parsed.length];
+            const resolves = next != null && (step.semitones - next.semitones + 12) % 12 === 7;
+            const candidates = resolves ? [...diatonic, ...secondary, ...borrowed] : [...diatonic, ...borrowed, ...secondary];
+            const chord = candidates.find(
+                (candidate) =>
+                    ((candidate.tones[0]?.pitchClass ?? -1) - tonicPitchClass + 12) % 12 === step.semitones &&
+                    triadQuality(candidate) === step.quality
+            );
             if (!chord) return [];
             chords.push(chord);
         }
@@ -106,7 +113,9 @@ export function findProgressions(diatonic: DisplayChord[], outside: DisplayChord
             {
                 progression,
                 chords,
-                numerals: chords.map((chord) => getRomanNumeral(chord.degree, chord.chord)),
+                numerals: chords.map((chord) =>
+                    chord.kind === "secondary" ? chord.numeral : getRomanNumeral(chord.degree, chord.chord)
+                ),
                 outside: outsideCount,
                 kind: chords.some((chord) => chord.kind === "borrowed")
                     ? ("borrowed" as const)

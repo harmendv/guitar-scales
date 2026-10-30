@@ -128,10 +128,9 @@ const edgeFade = useEdgeFade(row);
                     :style="isActive(shape) ? { borderColor: shape.color } : undefined"
                     @click="pick(shape)"
                 >
-                    <span
-                        class="mb-1 rounded-md px-1.5 text-[11px] font-bold text-[#1a1918]"
-                        :style="{ background: shape.color }"
-                    >
+                    <!-- The chord's colour as a dot by its name, as on the chord buttons -->
+                    <span class="mb-1 flex items-center gap-1 text-[11px] font-bold">
+                        <span class="size-1.5 rounded-full" :style="{ background: shape.color }"></span>
                         {{ formatNoteLabel(shape.chord.note) }}{{ shape.chord.chord }}
                     </span>
                     <ChordDiagram

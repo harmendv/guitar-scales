@@ -1,5 +1,5 @@
 import { computed, type Ref } from "vue";
-import { useResizeObserver, useScroll } from "@vueuse/core";
+import { useMutationObserver, useResizeObserver, useScroll } from "@vueuse/core";
 
 // Wide enough that a cut-off card clearly reads as "more this way", with no scrollbar to show it
 const FADE = "64px";
@@ -8,6 +8,9 @@ const FADE = "64px";
 export function useEdgeFade(element: Ref<HTMLElement | null>) {
     const { arrivedState, measure } = useScroll(element);
     useResizeObserver(element, () => measure());
+    // Its contents can change without it changing size (another tab, a filter, 7ths), and with them
+    // whether there's anything left to scroll to
+    useMutationObserver(element, () => measure(), { childList: true, subtree: true, characterData: true });
     return computed(() => ({
         "--fade-start": arrivedState.left ? "0px" : FADE,
         "--fade-end": arrivedState.right ? "0px" : FADE,
