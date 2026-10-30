@@ -62,7 +62,11 @@ const highlightByPitchClass = computed(() => {
 
 const notes = computed(() => {
     let octave = props.startOctave;
-    const chordActive = Object.keys(props.chordTones).length > 0;
+    // Only filled chord tones take over the neck; ring-only ones (a playing progression's chord)
+    // leave its colours as they are
+    const chordActive = Object.values(props.chordTones).some((tone) => tone.colors.length > 0);
+    // A progression is playing: the notes outside its current chord step back a little
+    const playing = Object.values(props.chordTones).some((tone) => tone.active);
     const positionEndFret = props.positionStartFret + props.positionSpan - 1;
 
     return Array.from({ length: props.frets }, (_, i) => {
@@ -76,10 +80,13 @@ const notes = computed(() => {
         // With chords selected, their tones take over and the rest of the scale steps back
         let kind: NoteKind = "other";
         if (chordActive) {
-            if (chordTone) kind = "chord";
-            else if (scaleNote) kind = "muted";
+            // A tone with no colours is only ringed (a playing chord that isn't selected)
+            if (chordTone?.colors.length) kind = "chord";
+            else if (scaleNote || chordTone) kind = "muted";
         } else if (pitchClass != null && pitchClass === props.rootPitchClass) kind = "root";
         else if (scaleNote) kind = "scale";
+        // A ringed note from outside the key still shows, as the scale's other notes do
+        else if (chordTone) kind = "muted";
 
         const inView =
             props.viewMode === "position"
@@ -104,6 +111,9 @@ const notes = computed(() => {
             inView,
             chordStyle: chordTone ? chordToneStyle(chordTone) : undefined,
             outside: Boolean(chordTone?.outside),
+            active: Boolean(chordTone?.active),
+            // Only notes otherwise shown in full: outside a position or hidden they're dimmer already
+            resting: playing && !chordTone?.active && inView && kind !== "other",
             rippleColor: chordTone?.colors[0],
             visible: Boolean(props.showRest) || (inView && kind !== "other"),
         };
@@ -111,16 +121,26 @@ const notes = computed(() => {
 });
 
 // One chord fills the dot with its colour; a note shared by several is split into equal slices.
-// A chord's root gets a ring in that chord's colour, set off from the dot by a gap of wood.
+// A chord's root gets a ring in that chord's colour, set off from the dot by a gap of wood. While a
+// progression plays, the chord it's on is ringed in white instead (the wood is dark in both
+// themes), whether or not it's filled.
+const WHITE = "rgb(255 255 255 / 0.9)";
 function chordToneStyle(tone: ChordTones[string]) {
-    const { colors, rootColor } = tone;
+    const { colors, rootColor, active } = tone;
+    const rings = active
+        ? ["0 0 0 2px var(--wood)", `0 0 0 4px ${WHITE}`]
+        : rootColor
+          ? ["0 0 0 2px var(--wood)", `0 0 0 4px ${rootColor}`]
+          : [];
+    const boxShadow = rings.length ? rings.join(", ") : undefined;
+    if (!colors.length) return { boxShadow };
     const slice = 100 / colors.length;
     return {
         background:
             colors.length === 1
                 ? colors[0]
                 : `conic-gradient(${colors.map((color, index) => `${color} ${index * slice}% ${(index + 1) * slice}%`).join(", ")})`,
-        boxShadow: rootColor ? `0 0 0 2px var(--wood), 0 0 0 4px ${rootColor}` : undefined,
+        boxShadow,
     };
 }
 
@@ -184,6 +204,9 @@ function play(index: number) {
                         kindClasses[note.kind],
                         note.kind === 'other' && index === 0 ? 'bg-[var(--wood-open)]' : '',
                         note.kind === 'chord' && note.outside ? 'outside-tone' : '',
+                        // The playing chord's notes grow, with a pop as it comes in
+                        note.active ? 'tone-active z-20' : '',
+                        note.resting ? 'tone-resting' : '',
                         !note.inView && note.kind !== 'other' ? 'opacity-30 shadow-none' : '',
                         !note.visible ? 'pointer-events-none opacity-0' : '',
                     )

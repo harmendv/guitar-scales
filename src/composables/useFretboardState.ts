@@ -22,11 +22,12 @@ import {
     spellByLetter,
     type DisplayChord,
 } from "@/lib/harmony";
+import { findProgressions } from "@/lib/progressions";
 import { getVoicings } from "@/lib/voicings";
 import { use3nps } from "@/composables/use3nps";
 import { playSequence } from "@/lib/audio";
 import { usePositionView } from "@/composables/usePositionView";
-import type { ActiveShape, FretboardViewMode } from "@/composables/useAppState";
+import type { ActiveShape, FretboardViewMode, ProgressionStep } from "@/composables/useAppState";
 import type { Tuning } from "@/lib/tunings";
 
 export type PositionStyle = "box" | "3nps";
@@ -49,6 +50,7 @@ export function useFretboardState(input: {
     tuning: ComputedRef<Tuning>;
     viewMode: Ref<FretboardViewMode>;
     activeShape: Ref<ActiveShape | null>;
+    progressionStep: Ref<ProgressionStep | null>;
 }) {
     const fretCount = 22;
     const noteNamesOptions = [
@@ -116,6 +118,9 @@ export function useFretboardState(input: {
             value: entry.id,
         }));
     });
+    const modeName = computed(
+        () => modeOptions.value[input.mode.value - 1]?.label.split(" / ")[0] ?? ""
+    );
     function spellScaleNotes(preference: ResolvedAccidentalPreference, auto: boolean): ScaleNote[] {
         const parent =
             parentPitchClass.value == null
@@ -163,14 +168,63 @@ export function useFretboardState(input: {
     );
     // Beyond the key: dominants of its chords, and chords borrowed from parallel modes
     const secondaryChords = computed(() => buildSecondaryDominants(chords.value, toneCount.value));
+    // Every borrowed chord, most common first; progressions can reach any of them
+    const allBorrowedChords = computed(() =>
+        buildBorrowedChords(chordScaleNotes.value, chords.value, toneCount.value, Infinity)
+    );
+    // The panel suggests the usual few, plus any other one picked from a progression
     const borrowedChords = computed(() =>
-        buildBorrowedChords(chordScaleNotes.value, chords.value, toneCount.value)
+        allBorrowedChords.value.filter(
+            (chord, index) => index < BORROWED_SUGGESTIONS || input.selectedChords.value.includes(chord.id)
+        )
     );
     const allChords = computed(() => [
         ...chords.value,
         ...secondaryChords.value,
         ...borrowedChords.value,
     ]);
+    // Progressions this key can play, reaching for any borrowed chord, not only the ones the panel
+    // suggests. Each chord keeps its degree's colour; ones from outside the key take extra colours.
+    const progressions = computed(() =>
+        findProgressions(
+            chords.value,
+            [
+                ...secondaryChords.value,
+                ...allBorrowedChords.value,
+            ],
+            modeName.value
+        ).map((entry) => {
+            const outsideIds = [...new Set(entry.chords.filter((chord) => chord.kind !== "diatonic").map((chord) => chord.id))];
+            return {
+                ...entry,
+                colors: entry.chords.map((chord) =>
+                    chord.kind === "diatonic"
+                        ? chordColor(Number(chord.id) - 1)
+                        : extraChordColor(outsideIds.indexOf(chord.id))
+                ),
+            };
+        })
+    );
+    // A key or mode the progression can't be played in clears its chord; one it can keeps it going
+    watch(
+        () => progressions.value.map((entry) => entry.progression.id),
+        (ids) => {
+            const step = input.progressionStep.value;
+            if (step && !ids.includes(step.id)) input.progressionStep.value = null;
+        },
+        { immediate: true }
+    );
+    const playingProgression = computed(() => {
+        const step = input.progressionStep.value;
+        return (step && progressions.value.find((entry) => entry.progression.id === step.id)) || null;
+    });
+    const progressionChord = computed(() => {
+        const step = input.progressionStep.value;
+        const active = playingProgression.value;
+        if (!step || !active) return null;
+        const index = step.index % active.chords.length;
+        return { chord: active.chords[index], color: active.colors[index] };
+    });
     // Chords from outside the key take the first free extra colour when selected and keep it
     // until they're deselected, so picking another never recolours the ones already showing.
     const extraColorSlots = ref<Record<string, number>>({});
@@ -208,13 +262,34 @@ export function useFretboardState(input: {
             .filter((chord) => input.selectedChords.value.includes(chord.id))
             .map((chord) => ({ chord, color: colorOf(chord) }))
     );
-    const selectedChordNames = computed(() =>
-        selectedChordList.value.map(({ chord }) => `${formatNoteLabel(chord.note)}${chord.chord}`)
+    // The selected chords as the progressions panel filters by them
+    const progressionFilter = computed(() =>
+        selectedChordList.value.map(({ chord, color }) => ({
+            id: chord.id,
+            name: `${formatNoteLabel(chord.note)}${chord.chord}`,
+            color,
+        }))
     );
-    // Every selected chord's shapes in one list up the neck, so shapes of different chords that lie
-    // close together sit side by side; picking one shows just that shape on the neck
+    // What the neck and the shapes strip show: the progression's current chord, if any, else the
+    // selection
+    const shownChordList = computed(() =>
+        progressionChord.value ? [progressionChord.value] : selectedChordList.value
+    );
+    // With nothing selected or playing, the shapes strip offers every chord in the key, while the
+    // neck keeps to the scale until one of them is picked
+    const showsEveryChord = computed(() => shownChordList.value.length === 0);
+    const shapeChordList = computed(() =>
+        showsEveryChord.value
+            ? chords.value.map((chord, index) => ({ chord, color: chordColor(index) }))
+            : shownChordList.value
+    );
+    const selectedChordNames = computed(() =>
+        shapeChordList.value.map(({ chord }) => `${formatNoteLabel(chord.note)}${chord.chord}`)
+    );
+    // Every chord's shapes in one list up the neck, so shapes of different chords that lie close
+    // together sit side by side; picking one shows just that shape on the neck
     const chordShapes = computed(() =>
-        selectedChordList.value
+        shapeChordList.value
             .flatMap(({ chord, color }) =>
                 getVoicings(chord.tones, input.tuning.value.data, fretCount).map((voicing, index) => ({
                     chord,
@@ -267,39 +342,61 @@ export function useFretboardState(input: {
     // With a shape picked, the neck shows only its chord, in that chord's colour
     const neckChordList = computed(() => {
         const active = activeChordShape.value;
-        return active ? selectedChordList.value.filter(({ chord }) => chord.id === active.chord.id) : selectedChordList.value;
+        return active ? shapeChordList.value.filter(({ chord }) => chord.id === active.chord.id) : shownChordList.value;
     });
     const modeRootNote = computed(() => scaleNotes.value[0]?.note ?? input.note.value);
     const rootPitchClass = computed(() => scaleNotes.value[0]?.pitchClass ?? null);
+    // While a progression plays it changes no colours: the neck keeps the selected chords' fills (or
+    // the plain scale) and only rings the chord it's on
+    const progressionFills = computed(() =>
+        progressionChord.value && !activeChordShape.value ? selectedChordList.value : null
+    );
     const chordTones = computed<ChordTones>(() => {
         const tones: ChordTones = {};
         const inScale = new Set(scaleNotes.value.map((scaleNote) => scaleNote.pitchClass));
-        for (const { chord, color } of neckChordList.value) {
+        const entryFor = (tone: DisplayChord["tones"][number]) =>
+            (tones[String(tone.pitchClass)] ??= {
+                colors: [],
+                note: tone.note,
+                outside: !inScale.has(tone.pitchClass),
+            });
+        const fills = progressionFills.value;
+        for (const { chord, color } of fills ?? neckChordList.value) {
             const chordRoot = getPitchClass(chord.note);
             for (const tone of chord.tones) {
-                const entry = (tones[String(tone.pitchClass)] ??= {
-                    colors: [],
-                    note: tone.note,
-                    outside: !inScale.has(tone.pitchClass),
-                });
-                entry.colors.push(color);
-                // A note that's some chord's root is labelled as that root (1)
+                const entry = entryFor(tone);
+                if (!entry.colors.includes(color)) entry.colors.push(color);
+                // A note that's some chord's root is labelled as that root (1). While a progression
+                // plays the rings are the playing chord's, so roots go unringed.
                 if (tone.pitchClass === chordRoot) {
-                    entry.rootColor ??= color;
+                    if (!fills) entry.rootColor ??= color;
                     entry.interval = tone.interval;
                 } else if (!entry.rootColor) {
                     entry.interval ??= tone.interval;
                 }
             }
         }
+        const current = fills && progressionChord.value?.chord;
+        if (current) {
+            for (const tone of current.tones) entryFor(tone).active = true;
+        }
         return tones;
     });
-    const chordLegend = computed(() =>
-        neckChordList.value.map(({ chord, color }) => ({
+    // The chords on the neck, and while a progression plays the chord it's on, marked active (only
+    // ringed if it isn't one of them)
+    const chordLegend = computed(() => {
+        const list = progressionFills.value ?? neckChordList.value;
+        const current = progressionFills.value ? progressionChord.value?.chord : undefined;
+        const items = list.map(({ chord, color }) => ({
             label: `${formatNoteLabel(chord.note)}${chord.chord}`,
-            color,
-        }))
-    );
+            color: color as string | undefined,
+            active: chord.id === current?.id,
+        }));
+        if (current && !items.some((item) => item.active)) {
+            items.push({ label: `${formatNoteLabel(current.note)}${current.chord}`, color: undefined, active: true });
+        }
+        return items;
+    });
     // Numbered positions follow the scale degrees on the lowest string, climbing up from the root.
     const positionSpanFrets = 5;
     const degreeFrets = computed<number[]>(() => {
@@ -393,9 +490,6 @@ export function useFretboardState(input: {
     watch([() => input.viewMode.value, () => input.threeNpsShapeIndex.value], () => {
         input.activeShape.value = null;
     });
-    const modeName = computed(
-        () => modeOptions.value[input.mode.value - 1]?.label.split(" / ")[0] ?? ""
-    );
     const heading = computed(() => `${formatNoteLabel(modeRootNote.value)} ${modeName.value}`.trim());
     const subheading = computed(
         () =>
@@ -435,11 +529,18 @@ export function useFretboardState(input: {
         { immediate: true }
     );
 
+    // Changing the selection takes the neck back from a progression
     function toggleChord(id: string) {
+        input.progressionStep.value = null;
         const selected = input.selectedChords.value;
         input.selectedChords.value = selected.includes(id)
             ? selected.filter((value) => value !== id)
             : [...selected, id];
+    }
+
+    // A progression borrows the neck from the selected chords, which come back once its chord is off
+    function showProgressionStep(step: ProgressionStep | null) {
+        input.progressionStep.value = step;
     }
 
     function selectPosition(index: number | null) {
@@ -473,7 +574,12 @@ export function useFretboardState(input: {
     return {
         activeChordShape,
         positionLabel,
+        progressionChord,
+        progressions,
+        showProgressionStep,
+        progressionFilter,
         selectedChordNames,
+        showsEveryChord,
         borrowedChords,
         chordShapes: visibleChordShapes,
         neckShape,
@@ -508,6 +614,7 @@ export function useFretboardState(input: {
     };
 }
 
+const BORROWED_SUGGESTIONS = 7;
 // F, B♭, E♭, A♭, D♭: parent keys that are written with flats.
 const FLAT_KEY_PITCH_CLASSES = [5, 10, 3, 8, 1];
 const KEY_NAMES = ["C", "Db", "D", "Eb", "E", "F", "F♯", "G", "Ab", "A", "Bb", "B"];

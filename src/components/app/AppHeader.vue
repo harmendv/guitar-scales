@@ -21,26 +21,25 @@ function play() {
 </script>
 
 <template>
-    <!-- The play button is as tall as one subheading line plus one heading line (text-sm, then
-         text-3xl/4xl at leading-tight), so it lines up with them; long titles wrap below it -->
-    <header class="flex items-start gap-4">
-        <div class="relative flex shrink-0">
-            <Ripple :count="ripples" :scale="1.8" class="inset-0 rounded-2xl bg-primary" />
-            <button
-                type="button"
-                aria-label="Play scale"
-                title="Play scale"
-                class="relative inline-flex size-[calc(1.25rem+1.875rem*1.25)] items-center justify-center rounded-2xl bg-primary text-primary-foreground transition hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-ring outline-none lg:size-[calc(1.25rem+2.25rem*1.25)]"
-                @click="play"
-            >
-                <Play class="ml-0.5 size-5 fill-current lg:size-6" />
-            </button>
-        </div>
-        <div class="min-w-0">
-            <p class="text-sm text-muted-foreground">{{ subheading }}</p>
-            <h1 class="font-display text-3xl leading-tight font-bold tracking-tight lg:text-4xl">
+    <header class="min-w-0">
+        <p class="text-sm text-muted-foreground">{{ subheading }}</p>
+        <!-- The play button follows the title as a quiet round button, red only on hover -->
+        <div class="flex items-center gap-3">
+            <h1 class="min-w-0 font-display text-3xl leading-tight font-bold tracking-tight lg:text-4xl">
                 {{ heading }}
             </h1>
+            <div class="relative flex shrink-0">
+                <Ripple :count="ripples" :scale="1.8" class="inset-0 rounded-full bg-primary" />
+                <button
+                    type="button"
+                    aria-label="Play scale"
+                    title="Play scale"
+                    class="relative inline-flex size-9 items-center justify-center rounded-full bg-surface text-primary transition outline-none hover:bg-primary hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 lg:size-10"
+                    @click="play"
+                >
+                    <Play class="ml-0.5 size-4 fill-current" />
+                </button>
+            </div>
         </div>
     </header>
 </template>

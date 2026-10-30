@@ -7,8 +7,10 @@ import { formatNoteLabel } from "@/lib/notes";
 defineProps<{
     active: boolean;
     chord: string;
-    // The chord's colour on the neck; fills the card while it's selected
+    // The chord's colour on the neck: a dot by its name, and the whole card while it's selected
     color: string;
+    // Whether it's selected, which isn't always whether it's lit: a progression can light it alone
+    selected: boolean;
     note: string;
     numeral: string;
     tones: string[];
@@ -32,7 +34,7 @@ function play() {
     <div class="relative">
         <button
             type="button"
-            :aria-pressed="active"
+            :aria-pressed="selected"
             :class="[
                 'flex size-full flex-col items-start rounded-xl border py-3 pr-10 pl-4 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 active ? 'text-[#1a1918]' : 'border-border bg-card hover:border-foreground/30',
@@ -41,8 +43,14 @@ function play() {
             @click="$emit('click')"
         >
             <span class="tabular-nums text-[11px] opacity-70">{{ numeral }}</span>
-            <span class="mt-1 font-display text-lg leading-none font-bold">
-                {{ formatNoteLabel(note) }}<sup class="ml-0.5 text-[11px] font-semibold">{{ chord }}</sup>
+            <!-- A dot in the chord's colour before its name, as in the shape cards and the neck's legend;
+                 a darker one once the whole card is that colour -->
+            <span class="mt-1 flex items-center gap-1.5 font-display text-lg leading-none font-bold">
+                <span
+                    class="size-2 shrink-0 rounded-full"
+                    :style="{ background: active ? 'rgb(0 0 0 / 0.3)' : color }"
+                ></span>
+                <span>{{ formatNoteLabel(note) }}<sup class="ml-0.5 text-[11px] font-semibold">{{ chord }}</sup></span>
             </span>
             <span class="mt-2 tabular-nums text-[10px] tracking-wide opacity-70">
                 {{ tones.map(formatNoteLabel).join(" · ") }}

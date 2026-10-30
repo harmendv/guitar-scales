@@ -6,6 +6,8 @@ import type { DisplayChord } from "@/lib/harmony";
 import { useEdgeFade } from "@/composables/useEdgeFade";
 import type { ChordSize } from "@/composables/useFretboardState";
 import { Segmented } from "@/components/ui/segmented";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { useCollapsedSection } from "@/composables/useCollapsedSection";
 
 type ChordGroup = "diatonic" | "secondary" | "borrowed";
 
@@ -20,6 +22,8 @@ const props = defineProps<{
 defineEmits<{
     toggle: [id: string];
 }>();
+
+const collapsed = useCollapsedSection("chords");
 
 const chordSize = defineModel<ChordSize>("chordSize", { required: true });
 const chordSizeOptions: { label: string; value: ChordSize }[] = [
@@ -62,11 +66,11 @@ const edgeFade = useEdgeFade(row);
 
 <template>
     <section>
-        <div class="mb-3 flex flex-col gap-1">
+        <div :class="['flex flex-col gap-1', !collapsed && 'mb-3']">
             <!-- From sm up both toggles sit small at the end of the title row, like the Key header's -->
             <div class="flex h-7 items-center justify-between gap-3">
-                <h2 class="font-display text-lg font-semibold tracking-tight">Chords</h2>
-                <div class="hidden items-center gap-2 sm:flex">
+                <SectionHeading v-model:collapsed="collapsed" title="Chords" />
+                <div v-if="!collapsed" class="hidden items-center gap-2 sm:flex">
                     <Segmented
                         v-if="groupOptions.length > 1"
                         v-model="group"
@@ -80,46 +84,49 @@ const edgeFade = useEdgeFade(row);
                     />
                 </div>
             </div>
-            <p class="text-xs text-muted-foreground">
+            <p v-if="!collapsed" class="text-xs text-muted-foreground">
                 {{ descriptions[group] }}
             </p>
         </div>
-        <!-- Phones: both toggles side by side under the description, big enough to tap -->
-        <div class="mb-3 flex gap-2 sm:hidden">
-            <Segmented
-                v-model="chordSize"
-                :options="chordSizeOptions"
-                class="shrink-0 [&_button]:px-2.5 [&_button]:text-[13px]"
-            />
-            <Segmented
-                v-if="groupOptions.length > 1"
-                v-model="group"
-                :options="groupOptions"
-                class="flex min-w-0 flex-1 gap-2 [&_button]:flex-1 [&_button]:px-1.5 [&_button]:text-[13px]"
-            />
-        </div>
-        <!-- Phones: one swipeable row running edge to edge, padded so the play ripple isn't
-             clipped by the scroller; sm and up: a grid -->
-        <div
-            ref="row"
-            :style="edgeFade"
-            class="edge-fade no-scrollbar -mx-4 -my-3 flex gap-2 overflow-x-auto px-4 py-3 sm:mx-0 sm:my-0 sm:py-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 sm:[mask-image:none] lg:grid-cols-7"
-        >
-            <ChordButton
-                class="w-[8.5rem] shrink-0 sm:w-auto"
-                v-for="chord in visibleChords"
-                :key="chord.id"
-                :active="selectedChords.includes(chord.id)"
-                :color="chordColors[chord.id]"
-                :note="chord.note"
-                :chord="chord.chord"
-                :numeral="chord.numeral"
-                :caption="chord.caption"
-                :source="chord.source"
-                :tones="chord.tones.map((tone) => tone.note)"
-                @click="$emit('toggle', chord.id)"
-                @play="playChord(chord.tones.map((tone) => tone.note))"
-            />
-        </div>
+        <template v-if="!collapsed">
+            <!-- Phones: both toggles side by side under the description, big enough to tap -->
+            <div class="mb-3 flex gap-2 sm:hidden">
+                <Segmented
+                    v-model="chordSize"
+                    :options="chordSizeOptions"
+                    class="shrink-0 [&_button]:px-2.5 [&_button]:text-[13px]"
+                />
+                <Segmented
+                    v-if="groupOptions.length > 1"
+                    v-model="group"
+                    :options="groupOptions"
+                    class="flex min-w-0 flex-1 gap-2 [&_button]:flex-1 [&_button]:px-1.5 [&_button]:text-[13px]"
+                />
+            </div>
+            <!-- Phones: one swipeable row running edge to edge, padded so the play ripple isn't
+                 clipped by the scroller; sm and up: a grid -->
+            <div
+                ref="row"
+                :style="edgeFade"
+                class="edge-fade no-scrollbar -mx-4 -my-3 flex gap-2 overflow-x-auto px-4 py-3 sm:mx-0 sm:my-0 sm:py-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 sm:[mask-image:none] lg:grid-cols-7"
+            >
+                <ChordButton
+                    class="w-[8.5rem] shrink-0 sm:w-auto"
+                    v-for="chord in visibleChords"
+                    :key="chord.id"
+                    :active="selectedChords.includes(chord.id)"
+                    :selected="selectedChords.includes(chord.id)"
+                    :color="chordColors[chord.id]"
+                    :note="chord.note"
+                    :chord="chord.chord"
+                    :numeral="chord.numeral"
+                    :caption="chord.caption"
+                    :source="chord.source"
+                    :tones="chord.tones.map((tone) => tone.note)"
+                    @click="$emit('toggle', chord.id)"
+                    @play="playChord(chord.tones.map((tone) => tone.note))"
+                />
+            </div>
+        </template>
     </section>
 </template>
